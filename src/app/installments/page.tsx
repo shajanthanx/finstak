@@ -170,7 +170,7 @@ export default function InstallmentsPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-slate-500 mb-1">Provider</label>
-                            <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. Apple Card" value={newPlan.provider} onChange={e => setNewPlan({ ...newPlan, provider: e.target.value })} />
+                            <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. Equipment Financing" value={newPlan.provider} onChange={e => setNewPlan({ ...newPlan, provider: e.target.value })} />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-slate-500 mb-1">Category</label>

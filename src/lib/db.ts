@@ -10,6 +10,7 @@ export interface DB {
     installments: any[];
     recurring: any[];
     trends: any[];
+    tasks: any[];
 }
 
 export async function readDB(): Promise<DB> {

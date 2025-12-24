@@ -1,15 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    LayoutDashboard,
+    Home,
+    DollarSign,
+    Users,
     PieChart,
     Wallet,
     Target,
-    CreditCard,
-    Layers
+    Layers,
+    ChevronDown,
+    ChevronRight,
+    ListTodo,
+    type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,17 +23,71 @@ interface SidebarProps {
     onClose: () => void;
 }
 
-const navItems = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/analytics", icon: PieChart, label: "Analytics" },
-    { href: "/transactions", icon: Wallet, label: "Transactions" },
-    { href: "/budget", icon: Target, label: "Budgeting" },
-    { href: "/cards", icon: CreditCard, label: "Cards" },
-    { href: "/installments", icon: Layers, label: "Installments" },
+interface NavItem {
+    href?: string;
+    icon: LucideIcon;
+    label: string;
+    children?: NavItem[];
+}
+
+const navItems: NavItem[] = [
+    {
+        href: "/",
+        icon: Home,
+        label: "Home"
+    },
+    {
+        icon: DollarSign,
+        label: "Finance",
+        children: [
+            { href: "/analytics", icon: PieChart, label: "Analytics" },
+            { href: "/transactions", icon: Wallet, label: "Transactions" },
+            { href: "/budget", icon: Target, label: "Budget" },
+
+            { href: "/installments", icon: Layers, label: "Installments" },
+        ]
+    },
+    {
+        icon: Users,
+        label: "Life Management",
+        children: [
+            { href: "/tasks", icon: ListTodo, label: "Tasks" },
+        ]
+    }
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+
+    // Auto-expand parent module when navigating to a child page
+    useEffect(() => {
+        navItems.forEach((item) => {
+            if (item.children) {
+                const hasActiveChild = item.children.some(child => child.href === pathname);
+                if (hasActiveChild) {
+                    setExpandedModules(prev => new Set(prev).add(item.label));
+                }
+            }
+        });
+    }, [pathname]);
+
+    const toggleModule = (label: string) => {
+        setExpandedModules(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(label)) {
+                newSet.delete(label);
+            } else {
+                newSet.add(label);
+            }
+            return newSet;
+        });
+    };
+
+    const isParentActive = (item: NavItem) => {
+        if (!item.children) return false;
+        return item.children.some(child => child.href === pathname);
+    };
 
     return (
         <>
@@ -54,24 +113,79 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 px-4 py-6 space-y-1">
+                    <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                         {navItems.map((item) => {
+                            const hasChildren = item.children && item.children.length > 0;
+                            const isExpanded = expandedModules.has(item.label);
                             const isActive = pathname === item.href;
+                            const parentActive = isParentActive(item);
+
                             return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => onClose()} // Close sidebar on mobile nav
-                                    className={cn(
-                                        "w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                                        isActive
-                                            ? "bg-slate-100 text-slate-900"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                <div key={item.label}>
+                                    {/* Parent Item */}
+                                    {item.href ? (
+                                        // Simple link (no children)
+                                        <Link
+                                            href={item.href}
+                                            onClick={() => onClose()}
+                                            className={cn(
+                                                "w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                                                isActive
+                                                    ? "bg-slate-900 text-white"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                            )}
+                                        >
+                                            <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                            {item.label}
+                                        </Link>
+                                    ) : (
+                                        // Parent with children
+                                        <button
+                                            onClick={() => toggleModule(item.label)}
+                                            className={cn(
+                                                "w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors",
+                                                parentActive
+                                                    ? "bg-slate-100 text-slate-900"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                            )}
+                                        >
+                                            <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                            <span className="flex-1 text-left">{item.label}</span>
+                                            {hasChildren && (
+                                                isExpanded ? (
+                                                    <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                                                ) : (
+                                                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                                                )
+                                            )}
+                                        </button>
                                     )}
-                                >
-                                    <item.icon className="w-4 h-4 mr-3" />
-                                    {item.label}
-                                </Link>
+
+                                    {/* Children Items */}
+                                    {hasChildren && isExpanded && (
+                                        <div className="mt-1 ml-4 pl-4 border-l-2 border-slate-200 space-y-1">
+                                            {item.children!.map((child) => {
+                                                const childActive = pathname === child.href;
+                                                return (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href!}
+                                                        onClick={() => onClose()}
+                                                        className={cn(
+                                                            "w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                                            childActive
+                                                                ? "bg-slate-900 text-white"
+                                                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                        )}
+                                                    >
+                                                        <child.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                                        {child.label}
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })}
                     </nav>

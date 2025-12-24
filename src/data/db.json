@@ -114,33 +114,6 @@
       "color": "#18181b"
     }
   ],
-  "cards": [
-    {
-      "id": 1,
-      "bankName": "Chase",
-      "type": "debit",
-      "balance": 2450.5,
-      "number": "4242",
-      "expiry": "12/25",
-      "holder": "JOHN DOE",
-      "color": "bg-slate-900",
-      "pin": "1234",
-      "isFrozen": false
-    },
-    {
-      "id": 2,
-      "bankName": "Amex Platinum",
-      "type": "credit",
-      "balance": 1250,
-      "limit": 10000,
-      "number": "3782",
-      "expiry": "09/26",
-      "holder": "JOHN DOE",
-      "color": "bg-zinc-600",
-      "pin": "8899",
-      "isFrozen": false
-    }
-  ],
   "installments": [
     {
       "id": 1,
@@ -238,6 +211,101 @@
       "income": 6200,
       "expense": 4300,
       "savings": 1900
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1766605841548,
+      "title": "dbdf",
+      "category": "Personal",
+      "priority": "medium",
+      "dueDate": "2025-12-24",
+      "completed": false,
+      "status": "todo",
+      "subtasks": [],
+      "notes": ""
+    },
+    {
+      "id": 1,
+      "title": "Review Project Goals",
+      "category": "Work",
+      "priority": "high",
+      "dueDate": "2023-10-28",
+      "completed": true,
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 101,
+          "title": "Check emails",
+          "completed": true
+        },
+        {
+          "id": 102,
+          "title": "Update Jira",
+          "completed": false
+        }
+      ],
+      "notes": "loihjbkubkcsdcsddsgfb fdgbdf"
+    },
+    {
+      "id": 2,
+      "title": "Grocery Shopping",
+      "category": "Personal",
+      "priority": "medium",
+      "dueDate": "2023-10-29",
+      "completed": true,
+      "status": "done",
+      "subtasks": [],
+      "notes": "Milk, Eggs, Breadtghcsdcsdscs"
+    },
+    {
+      "id": 3,
+      "title": "Doctor Appointment",
+      "category": "Health",
+      "priority": "high",
+      "dueDate": "2023-11-01",
+      "completed": true,
+      "status": "done",
+      "subtasks": [],
+      "notes": "j gujmdccsdcs"
+    },
+    {
+      "id": 4,
+      "title": "Call Mom",
+      "category": "Family",
+      "priority": "low",
+      "dueDate": "2023-10-30",
+      "completed": true,
+      "status": "done",
+      "subtasks": [],
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "title": "Finish Project Report",
+      "category": "Work",
+      "priority": "high",
+      "dueDate": "2023-10-27",
+      "completed": false,
+      "status": "todo",
+      "subtasks": [
+        {
+          "id": 501,
+          "title": "Draft outline",
+          "completed": true
+        },
+        {
+          "id": 502,
+          "title": "Gather data",
+          "completed": true
+        },
+        {
+          "id": 503,
+          "title": "Write summary",
+          "completed": false
+        }
+      ],
+      "notes": ""
     }
   ]
 }

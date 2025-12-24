@@ -16,19 +16,7 @@ export interface Budget {
     color: string;
 }
 
-export interface Card {
-    id: number;
-    bankName: string;
-    type: 'debit' | 'credit';
-    balance: number;
-    limit?: number;
-    number: string;
-    expiry: string;
-    holder: string;
-    color: string;
-    pin: string;
-    isFrozen: boolean;
-}
+
 
 export interface Installment {
     id: number;
@@ -72,3 +60,24 @@ export interface KPIStat {
 }
 
 export interface AnalyticsStat extends KPIStat { }
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskStatus = 'todo' | 'in-progress' | 'done';
+
+export interface Subtask {
+    id: number;
+    title: string;
+    completed: boolean;
+}
+
+export interface Task {
+    id: number;
+    title: string;
+    category: string;
+    priority: TaskPriority;
+    dueDate: string;
+    completed: boolean;
+    status: TaskStatus;
+    subtasks: Subtask[];
+    notes: string;
+}

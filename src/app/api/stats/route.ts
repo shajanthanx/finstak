@@ -9,12 +9,12 @@ export async function GET(request: Request) {
 
     if (type === 'kpi') {
         // Calculate real KPIs from transactions
-        const totalBalance = db.cards.reduce((acc: number, c: any) => acc + (c.type === 'debit' ? c.balance : -c.balance), 0);
         const income = db.transactions.filter((t: any) => t.type === 'income').reduce((acc: number, t: any) => acc + t.amount, 0);
         const expense = db.transactions.filter((t: any) => t.type === 'expense').reduce((acc: number, t: any) => acc + t.amount, 0);
+        const netSavings = income - expense;
 
         return NextResponse.json([
-            { label: 'Total Balance', value: `$${totalBalance.toLocaleString()}`, trend: '+2.5%', isPositive: true },
+            { label: 'Net Savings', value: `$${netSavings.toLocaleString()}`, trend: '+1.2%', isPositive: true },
             { label: 'Monthly Income', value: `$${income.toLocaleString()}`, trend: '+12%', isPositive: true },
             { label: 'Monthly Expenses', value: `$${expense.toLocaleString()}`, trend: '-5%', isPositive: true },
             { label: 'Active Installments', value: `${db.installments.length}`, trend: 'Plans', isPositive: true },

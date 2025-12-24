@@ -1,4 +1,4 @@
-import { Transaction, Budget, Card, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat } from "@/types";
+import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat, Task } from "@/types";
 
 export const api = {
     getTransactions: async (): Promise<Transaction[]> => {
@@ -30,22 +30,7 @@ export const api = {
         });
     },
 
-    getCards: async (): Promise<Card[]> => {
-        const res = await fetch('/api/cards');
-        return res.json();
-    },
 
-    createCard: async (card: Card): Promise<Card> => {
-        const res = await fetch('/api/cards', {
-            method: 'POST',
-            body: JSON.stringify(card),
-        });
-        return res.json();
-    },
-
-    deleteCard: async (id: number): Promise<void> => {
-        await fetch(`/api/cards/${id}`, { method: 'DELETE' });
-    },
 
     getInstallments: async (): Promise<Installment[]> => {
         const res = await fetch('/api/installments');
@@ -78,5 +63,30 @@ export const api = {
     getAnalyticsStats: async (): Promise<AnalyticsStat[]> => {
         const res = await fetch('/api/stats?type=analytics');
         return res.json();
+    },
+
+    getTasks: async (): Promise<Task[]> => {
+        const res = await fetch('/api/tasks');
+        return res.json();
+    },
+
+    createTask: async (task: Task): Promise<Task> => {
+        const res = await fetch('/api/tasks', {
+            method: 'POST',
+            body: JSON.stringify(task),
+        });
+        return res.json();
+    },
+
+    updateTask: async (id: number, task: Partial<Task>): Promise<Task> => {
+        const res = await fetch(`/api/tasks/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(task),
+        });
+        return res.json();
+    },
+
+    deleteTask: async (id: number): Promise<void> => {
+        await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     }
 };

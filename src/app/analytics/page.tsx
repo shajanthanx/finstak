@@ -16,6 +16,12 @@ import {
     Line
 } from 'recharts';
 import { useMemo } from "react";
+import { KPIStats } from "@/components/dashboard/KPIStats";
+import { CashFlowChart } from "@/components/dashboard/CashFlowChart";
+import { SpendingPieChart } from "@/components/dashboard/SpendingPieChart";
+import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { BudgetStatus } from "@/components/dashboard/BudgetStatus";
+import { UpcomingBills } from "@/components/dashboard/UpcomingBills";
 
 export default function AnalyticsPage() {
     const { data: stats } = useQuery({ queryKey: ['analyticsStats'], queryFn: api.getAnalyticsStats });
@@ -67,6 +73,9 @@ export default function AnalyticsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
+            {/* KPI Stats from Home */}
+            <KPIStats />
+
             {/* Analytics Header Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {stats?.map((stat, i) => (
@@ -191,6 +200,21 @@ export default function AnalyticsPage() {
                     </table>
                 </div>
             </Card>
+
+            {/* Dashboard Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <CashFlowChart />
+                <SpendingPieChart />
+            </div>
+
+            {/* Dashboard Bottom Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <RecentTransactions />
+                <div className="space-y-6">
+                    <BudgetStatus />
+                    <UpcomingBills />
+                </div>
+            </div>
         </div>
     );
 }

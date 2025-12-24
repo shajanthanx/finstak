@@ -1,4 +1,4 @@
-import { Transaction, Budget, Card, Installment } from '@/types';
+import { Transaction, Budget, Installment } from '@/types';
 
 export const monthlyTrendData = [
     { name: 'Jan', income: 4500, expense: 3200, savings: 1300 },
@@ -30,33 +30,7 @@ export const initialBudgets: Budget[] = [
     { category: 'Housing', limit: 2000, color: '#18181b' },
 ];
 
-export const initialCards: Card[] = [
-    {
-        id: 1,
-        bankName: 'Chase',
-        type: 'debit',
-        balance: 2450.50,
-        number: '4242',
-        expiry: '12/25',
-        holder: 'JOHN DOE',
-        color: 'bg-slate-900',
-        pin: '1234',
-        isFrozen: false
-    },
-    {
-        id: 2,
-        bankName: 'Amex Platinum',
-        type: 'credit',
-        balance: 1250.00, // Owed
-        limit: 10000,
-        number: '3782',
-        expiry: '09/26',
-        holder: 'JOHN DOE',
-        color: 'bg-zinc-600',
-        pin: '8899',
-        isFrozen: false
-    }
-];
+
 
 export const initialInstallments: Installment[] = [
     {
@@ -98,4 +72,69 @@ export const recurring = [
     { id: 1, name: 'Spotify Premium', amount: 12.99, due: '2 days' },
     { id: 2, name: 'Adobe Creative Cloud', amount: 54.99, due: '5 days' },
     { id: 3, name: 'Gym Membership', amount: 45.00, due: '1 week' },
+];
+
+export const initialTasks = [
+    {
+        id: 1,
+        title: 'Review Project Goals',
+        category: 'Work',
+        priority: 'high',
+        dueDate: '2023-10-28',
+        completed: false,
+        status: 'todo',
+        subtasks: [
+            { id: 101, title: 'Check emails', completed: true },
+            { id: 102, title: 'Update Jira', completed: false }
+        ],
+        notes: ''
+    },
+    {
+        id: 2,
+        title: 'Grocery Shopping',
+        category: 'Personal',
+        priority: 'medium',
+        dueDate: '2023-10-29',
+        completed: true,
+        status: 'done',
+        subtasks: [],
+        notes: 'Milk, Eggs, Bread'
+    },
+    {
+        id: 3,
+        title: 'Doctor Appointment',
+        category: 'Health',
+        priority: 'high',
+        dueDate: '2023-11-01',
+        completed: false,
+        status: 'todo',
+        subtasks: [],
+        notes: ''
+    },
+    {
+        id: 4,
+        title: 'Call Mom',
+        category: 'Family',
+        priority: 'low',
+        dueDate: '2023-10-30',
+        completed: false,
+        status: 'in-progress',
+        subtasks: [],
+        notes: ''
+    },
+    {
+        id: 5,
+        title: 'Finish Project Report',
+        category: 'Work',
+        priority: 'high',
+        dueDate: '2023-10-27',
+        completed: false,
+        status: 'todo',
+        subtasks: [
+            { id: 501, title: 'Draft outline', completed: true },
+            { id: 502, title: 'Gather data', completed: true },
+            { id: 503, title: 'Write summary', completed: false }
+        ],
+        notes: ''
+    },
 ];
