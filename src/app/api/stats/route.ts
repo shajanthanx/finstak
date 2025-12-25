@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase } from '@/lib/utils/transformation';
 
 export async function GET(request: Request) {
     const supabase = await createClient();
@@ -13,11 +14,18 @@ export async function GET(request: Request) {
     const type = searchParams.get('type');
 
     if (type === 'kpi') {
-        // Calculate real KPIs from transactions
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+
+        // Calculate real KPIs from transactions for CURRENT MONTH
         const { data: transactions, error: txError } = await supabase
             .from('transactions')
             .select('amount, type')
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .gte('date', startOfMonthStr);
 
         if (txError) {
             console.error('Error fetching transactions for KPI:', txError);
@@ -34,9 +42,9 @@ export async function GET(request: Request) {
             .eq('user_id', user.id);
 
         return NextResponse.json([
-            { label: 'Net Savings', value: `$${netSavings.toLocaleString()}`, trend: '+1.2%', isPositive: true },
-            { label: 'Monthly Income', value: `$${income.toLocaleString()}`, trend: '+12%', isPositive: true },
-            { label: 'Monthly Expenses', value: `$${expense.toLocaleString()}`, trend: '-5%', isPositive: true },
+            { label: 'Net Savings', value: `$${netSavings.toLocaleString()}`, trend: 'Current Month', isPositive: netSavings >= 0 },
+            { label: 'Monthly Income', value: `$${income.toLocaleString()}`, trend: 'Current Month', isPositive: true },
+            { label: 'Monthly Expenses', value: `$${expense.toLocaleString()}`, trend: 'Current Month', isPositive: expense === 0 },
             { label: 'Active Installments', value: `${installments?.length || 0}`, trend: 'Plans', isPositive: true },
         ]);
     }
@@ -61,19 +69,27 @@ export async function GET(request: Request) {
             // Group by month
             const monthlyData: any = {};
             transactions?.forEach(t => {
-                const month = new Date(t.date).toLocaleDateString('en-US', { month: 'short' });
-                if (!monthlyData[month]) {
-                    monthlyData[month] = { name: month, income: 0, expense: 0, savings: 0 };
+                const date = new Date(t.date);
+                const month = date.toLocaleDateString('en-US', { month: 'short' });
+                const year = date.getFullYear();
+                const key = `${month} ${year}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = { name: month, income: 0, expense: 0, savings: 0, sortKey: date.getTime() };
                 }
                 if (t.type === 'income') {
-                    monthlyData[month].income += Number(t.amount);
+                    monthlyData[key].income += Number(t.amount);
                 } else {
-                    monthlyData[month].expense += Number(t.amount);
+                    monthlyData[key].expense += Number(t.amount);
                 }
-                monthlyData[month].savings = monthlyData[month].income - monthlyData[month].expense;
+                monthlyData[key].savings = monthlyData[key].income - monthlyData[key].expense;
             });
 
-            return NextResponse.json(Object.values(monthlyData).slice(0, 7));
+            return NextResponse.json(
+                Object.values(monthlyData)
+                    .sort((a: any, b: any) => b.sortKey - a.sortKey)
+                    .map(({ sortKey, ...rest }: any) => rest)
+                    .slice(0, 7)
+            );
         }
 
         // Format data for frontend
@@ -91,7 +107,7 @@ export async function GET(request: Request) {
         // Calculate analytics stats
         const { data: transactions } = await supabase
             .from('transactions')
-            .select('amount, type')
+            .select('amount, type, date')
             .eq('user_id', user.id);
 
         const income = transactions?.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0) || 0;
@@ -101,14 +117,13 @@ export async function GET(request: Request) {
         const avgDailySpend = transactions && transactions.length > 0 ? (expense / 30).toFixed(2) : '0.00';
 
         return NextResponse.json([
-            { label: 'Savings Rate', value: `${savingsRate}%`, trend: '+4.2% from last month', isPositive: true, icon: 'Percent' },
+            { label: 'Savings Rate', value: `${savingsRate}%`, trend: 'Lifetime average', isPositive: Number(savingsRate) > 20, icon: 'Percent' },
             { label: 'Net Cash Flow', value: `${netCashFlow >= 0 ? '+' : ''}$${netCashFlow.toLocaleString()}`, trend: 'Income - Expenses', isPositive: netCashFlow >= 0, icon: 'DollarSign' },
-            { label: 'Avg. Daily Spend', value: `$${avgDailySpend}`, trend: '+$12.00 vs average', isPositive: false, icon: 'Calendar' },
+            { label: 'Avg. Daily Spend', value: `$${avgDailySpend}`, trend: 'Based on 30 days', isPositive: false, icon: 'Calendar' },
         ]);
     }
 
     if (type === 'recurring') {
-        // Note: recurring bills table was removed, return empty array
         return NextResponse.json([]);
     }
 

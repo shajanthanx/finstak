@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function GET() {
     const supabase = await createClient();
@@ -36,40 +37,19 @@ export async function GET() {
             return NextResponse.json({ error: subtasksError.message }, { status: 500 });
         }
 
-        // Attach subtasks to their parent tasks and transform to camelCase
-        const tasksWithSubtasks = tasks.map(task => ({
-            id: task.id,
-            title: task.title,
-            category: task.category,
-            priority: task.priority,
-            dueDate: task.due_date,
-            completed: task.completed,
-            status: task.status,
-            notes: task.notes,
-            subtasks: subtasks?.filter(st => st.task_id === task.id).map(st => ({
-                id: st.id,
-                title: st.title,
-                completed: st.completed
-            })) || []
-        }));
+        // Use helper for mapping
+        const transformedTasks = tasks.map(task => {
+            const taskWithCamelKeys = toCamelCase(task) as any;
+            return {
+                ...taskWithCamelKeys,
+                subtasks: subtasks?.filter(st => st.task_id === task.id).map(st => toCamelCase(st)) || []
+            };
+        });
 
-        return NextResponse.json(tasksWithSubtasks);
+        return NextResponse.json(transformedTasks);
     }
 
-    // Transform tasks without subtasks
-    const transformedTasks = tasks?.map(task => ({
-        id: task.id,
-        title: task.title,
-        category: task.category,
-        priority: task.priority,
-        dueDate: task.due_date,
-        completed: task.completed,
-        status: task.status,
-        notes: task.notes,
-        subtasks: []
-    })) || [];
-
-    return NextResponse.json(transformedTasks);
+    return NextResponse.json(tasks?.map(t => ({ ...(toCamelCase(t) as any), subtasks: [] })) || []);
 }
 
 export async function POST(request: Request) {
@@ -84,11 +64,14 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { subtasks, ...taskData } = body;
 
+        // Transform camelCase keys to snake_case for DB
+        const dbTaskData = toSnakeCase(taskData);
+
         // Insert task
         const { data: task, error: taskError } = await supabase
             .from('tasks')
             .insert({
-                ...taskData,
+                ...(dbTaskData as any),
                 user_id: user.id
             })
             .select()
@@ -98,6 +81,8 @@ export async function POST(request: Request) {
             console.error('Error creating task:', taskError);
             return NextResponse.json({ error: taskError.message }, { status: 500 });
         }
+
+        const transformedTask: any = toCamelCase(task);
 
         // Insert subtasks if provided
         if (subtasks && subtasks.length > 0) {
@@ -114,18 +99,20 @@ export async function POST(request: Request) {
 
             if (subtasksError) {
                 console.error('Error creating subtasks:', subtasksError);
-                // Task was created, but subtasks failed
                 return NextResponse.json({
-                    ...task,
+                    ...transformedTask,
                     subtasks: [],
                     warning: 'Task created but subtasks failed'
                 });
             }
 
-            return NextResponse.json({ ...task, subtasks: insertedSubtasks });
+            return NextResponse.json({
+                ...transformedTask,
+                subtasks: insertedSubtasks.map(st => toCamelCase(st))
+            });
         }
 
-        return NextResponse.json({ ...task, subtasks: [] });
+        return NextResponse.json({ ...transformedTask, subtasks: [] });
     } catch (err) {
         console.error('Error parsing request:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

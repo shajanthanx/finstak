@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function GET() {
     const supabase = await createClient();
@@ -20,7 +21,7 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data || []);
+    return NextResponse.json(toCamelCase(data || []));
 }
 
 export async function POST(request: Request) {
@@ -37,13 +38,8 @@ export async function POST(request: Request) {
         const { data, error } = await supabase
             .from('transactions')
             .insert({
-                user_id: user.id,
-                name: body.name,
-                category: body.category,
-                date: body.date,
-                amount: body.amount,
-                type: body.type,
-                icon: body.icon || '💳'
+                ...(toSnakeCase(body) as any),
+                user_id: user.id
             })
             .select()
             .single();
@@ -53,7 +49,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        return NextResponse.json(data);
+        return NextResponse.json(toCamelCase(data));
     } catch (err) {
         console.error('Error parsing request:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

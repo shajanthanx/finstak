@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function GET() {
     const supabase = await createClient();
@@ -20,20 +21,7 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform snake_case to camelCase for frontend
-    const installments = data?.map(inst => ({
-        id: inst.id,
-        name: inst.name,
-        provider: inst.provider,
-        totalAmount: inst.total_amount,
-        paidAmount: inst.paid_amount,
-        totalMonths: inst.total_months,
-        paidMonths: inst.paid_months,
-        startDate: inst.start_date,
-        category: inst.category
-    })) || [];
-
-    return NextResponse.json(installments);
+    return NextResponse.json(toCamelCase(data || []));
 }
 
 export async function POST(request: Request) {
@@ -50,15 +38,8 @@ export async function POST(request: Request) {
         const { data, error } = await supabase
             .from('installments')
             .insert({
-                user_id: user.id,
-                name: body.name,
-                provider: body.provider,
-                total_amount: body.totalAmount,
-                paid_amount: body.paidAmount || 0,
-                total_months: body.totalMonths,
-                paid_months: body.paidMonths || 0,
-                start_date: body.startDate,
-                category: body.category
+                ...(toSnakeCase(body) as any),
+                user_id: user.id
             })
             .select()
             .single();
@@ -68,18 +49,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Transform for frontend
-        return NextResponse.json({
-            id: data.id,
-            name: data.name,
-            provider: data.provider,
-            totalAmount: data.total_amount,
-            paidAmount: data.paid_amount,
-            totalMonths: data.total_months,
-            paidMonths: data.paid_months,
-            startDate: data.start_date,
-            category: data.category
-        });
+        return NextResponse.json(toCamelCase(data));
     } catch (err) {
         console.error('Error parsing request:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

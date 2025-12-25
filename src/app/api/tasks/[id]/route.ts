@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function PUT(
     request: Request,
@@ -15,26 +16,41 @@ export async function PUT(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { subtasks, dueDate, ...otherData } = body;
+        const { subtasks, ...otherData } = body;
 
         // Transform camelCase to snake_case for database
-        const taskUpdates: any = { ...otherData };
-        if (dueDate !== undefined) {
-            taskUpdates.due_date = dueDate;
-        }
+        const taskUpdates = toSnakeCase(otherData) as any;
 
-        // Update task
-        const { data: task, error: taskError } = await supabase
-            .from('tasks')
-            .update(taskUpdates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+        // If there are other fields to update, do the update
+        let task;
+        if (Object.keys(taskUpdates).length > 0) {
+            const { data, error: taskError } = await supabase
+                .from('tasks')
+                .update(taskUpdates)
+                .eq('id', id)
+                .eq('user_id', user.id)
+                .select()
+                .single();
 
-        if (taskError) {
-            console.error('Error updating task:', taskError);
-            return NextResponse.json({ error: taskError.message }, { status: 500 });
+            if (taskError) {
+                console.error('Error updating task:', taskError);
+                return NextResponse.json({ error: taskError.message }, { status: 500 });
+            }
+            task = data;
+        } else {
+            // Just fetch the task if only subtasks (or nothing) are provided
+            const { data, error: fetchError } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('id', id)
+                .eq('user_id', user.id)
+                .single();
+
+            if (fetchError) {
+                console.error('Error fetching task:', fetchError);
+                return NextResponse.json({ error: fetchError.message }, { status: 500 });
+            }
+            task = data;
         }
 
         if (!task) {
@@ -79,20 +95,10 @@ export async function PUT(
         }
 
         // Return transformed task and subtasks
+        const transformedTask: any = toCamelCase(task);
         return NextResponse.json({
-            id: task.id,
-            title: task.title,
-            category: task.category,
-            priority: task.priority,
-            dueDate: task.due_date,
-            completed: task.completed,
-            status: task.status,
-            notes: task.notes,
-            subtasks: finalSubtasks.map(st => ({
-                id: st.id,
-                title: st.title,
-                completed: st.completed
-            }))
+            ...transformedTask,
+            subtasks: finalSubtasks.map(st => toCamelCase(st))
         });
     } catch (err) {
         console.error('Error parsing request:', err);

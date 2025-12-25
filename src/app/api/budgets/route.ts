@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCategoryConfig } from '@/config/categories';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function GET() {
     const supabase = await createClient();
@@ -21,12 +22,15 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform budget_limit to limit for frontend compatibility
-    const budgets = data?.map(b => ({
-        category: b.category,
-        limit: b.budget_limit,
-        color: b.color
-    })) || [];
+    // Map budget_limit to limit for frontend compatibility
+    const budgets = data?.map(b => {
+        const camel = toCamelCase(b) as any;
+        return {
+            category: camel.category,
+            limit: camel.budgetLimit,
+            color: camel.color
+        };
+    }) || [];
 
     return NextResponse.json(budgets);
 }
@@ -61,11 +65,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Transform for frontend
+        const camel = toCamelCase(data) as any;
         return NextResponse.json({
-            category: data.category,
-            limit: data.budget_limit,
-            color: data.color
+            category: camel.category,
+            limit: camel.budgetLimit,
+            color: camel.color
         });
     } catch (err) {
         console.error('Error parsing request:', err);
@@ -112,11 +116,11 @@ export async function PUT(request: Request) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
             }
 
-            // Transform for frontend
+            const camel = toCamelCase(data) as any;
             return NextResponse.json({
-                category: data.category,
-                limit: data.budget_limit,
-                color: data.color
+                category: camel.category,
+                limit: camel.budgetLimit,
+                color: camel.color
             });
         } else {
             // Create new budget if it doesn't exist
@@ -138,11 +142,11 @@ export async function PUT(request: Request) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
             }
 
-            // Transform for frontend
+            const camel = toCamelCase(data) as any;
             return NextResponse.json({
-                category: data.category,
-                limit: data.budget_limit,
-                color: data.color
+                category: camel.category,
+                limit: camel.budgetLimit,
+                color: camel.color
             });
         }
     } catch (err) {

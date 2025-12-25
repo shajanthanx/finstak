@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { toCamelCase, toSnakeCase } from '@/lib/utils/transformation';
 
 export async function GET() {
     const supabase = await createClient();
@@ -20,17 +21,7 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform snake_case to camelCase for frontend
-    const categories = data?.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        type: cat.type,
-        icon: cat.icon,
-        color: cat.color,
-        budgetingEnabled: cat.budgeting_enabled
-    })) || [];
-
-    return NextResponse.json(categories);
+    return NextResponse.json(toCamelCase(data || []));
 }
 
 export async function POST(request: Request) {
@@ -47,12 +38,8 @@ export async function POST(request: Request) {
         const { data, error } = await supabase
             .from('categories')
             .insert({
-                user_id: user.id,
-                name: body.name,
-                type: body.type,
-                icon: body.icon,
-                color: body.color,
-                budgeting_enabled: body.budgetingEnabled ?? false
+                ...(toSnakeCase(body) as any),
+                user_id: user.id
             })
             .select()
             .single();
@@ -62,15 +49,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Transform for frontend
-        return NextResponse.json({
-            id: data.id,
-            name: data.name,
-            type: data.type,
-            icon: data.icon,
-            color: data.color,
-            budgetingEnabled: data.budgeting_enabled
-        });
+        return NextResponse.json(toCamelCase(data));
     } catch (err) {
         console.error('Error parsing request:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
@@ -87,21 +66,15 @@ export async function PUT(request: Request) {
 
     try {
         const body = await request.json();
-        const { id, budgetingEnabled, ...otherUpdates } = body;
+        const { id, ...updates } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
         }
 
-        // Transform camelCase to snake_case for database
-        const dbUpdates: any = { ...otherUpdates };
-        if (budgetingEnabled !== undefined) {
-            dbUpdates.budgeting_enabled = budgetingEnabled;
-        }
-
         const { data, error } = await supabase
             .from('categories')
-            .update(dbUpdates)
+            .update(toSnakeCase(updates) as any)
             .eq('id', id)
             .eq('user_id', user.id)
             .select()
@@ -116,15 +89,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Category not found' }, { status: 404 });
         }
 
-        // Transform for frontend
-        return NextResponse.json({
-            id: data.id,
-            name: data.name,
-            type: data.type,
-            icon: data.icon,
-            color: data.color,
-            budgetingEnabled: data.budgeting_enabled
-        });
+        return NextResponse.json(toCamelCase(data));
     } catch (err) {
         console.error('Error parsing request:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
