@@ -13,7 +13,10 @@ import {
     Layers,
     ChevronDown,
     ChevronRight,
+    ChevronLeft,
     ListTodo,
+    PanelLeftClose,
+    PanelLeftOpen,
     type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,6 +62,7 @@ const navItems: NavItem[] = [
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Auto-expand parent module when navigating to a child page
     useEffect(() => {
@@ -100,16 +104,38 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
-                isOpen ? "translate-x-0" : "-translate-x-full"
+                "fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0",
+                isOpen ? "translate-x-0" : "-translate-x-full",
+                isCollapsed ? "md:w-20" : "md:w-64 w-64"
             )}>
-                <div className="h-full flex flex-col">
+                {/* Floating Toggle Button - Desktop Only */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="hidden md:flex absolute -right-3 top-12 z-50 items-center justify-center w-6 h-6 bg-white border border-slate-200 rounded-full shadow-sm text-slate-500 hover:text-slate-900 transition-all hover:scale-110"
+                >
+                    {isCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5" />
+                    ) : (
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                    )}
+                </button>
+
+                <div className="h-full flex flex-col overflow-hidden">
                     {/* Logo */}
-                    <div className="h-16 flex items-center px-6 border-b border-slate-100">
-                        <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center mr-3">
-                            <span className="text-white font-bold text-lg">F</span>
+                    <div className={cn(
+                        "h-16 flex items-center border-b border-slate-100 transition-all duration-300",
+                        isCollapsed ? "px-4 justify-center" : "px-6"
+                    )}>
+                        <div className="flex items-center overflow-hidden">
+                            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-bold text-lg">F</span>
+                            </div>
+                            {!isCollapsed && (
+                                <span className="ml-3 font-semibold text-lg tracking-tight whitespace-nowrap opacity-100 transition-opacity duration-300">
+                                    FinStack
+                                </span>
+                            )}
                         </div>
-                        <span className="font-semibold text-lg tracking-tight">FinStack</span>
                     </div>
 
                     {/* Navigation */}
@@ -129,40 +155,48 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                             href={item.href}
                                             onClick={() => onClose()}
                                             className={cn(
-                                                "w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                                                "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-300",
                                                 isActive
                                                     ? "bg-slate-900 text-white"
-                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+                                                isCollapsed ? "px-0 justify-center h-10 w-10 mx-auto" : "px-3 py-2.5"
                                             )}
+                                            title={isCollapsed ? item.label : ""}
                                         >
-                                            <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                                            {item.label}
+                                            <item.icon className={cn("w-4 h-4 flex-shrink-0", !isCollapsed && "mr-3")} />
+                                            {!isCollapsed && <span className="truncate">{item.label}</span>}
                                         </Link>
                                     ) : (
                                         // Parent with children
                                         <button
                                             onClick={() => toggleModule(item.label)}
                                             className={cn(
-                                                "w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors",
+                                                "w-full flex items-center rounded-lg text-sm font-semibold transition-all duration-300",
                                                 parentActive
                                                     ? "bg-slate-100 text-slate-900"
-                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+                                                isCollapsed ? "px-0 justify-center h-10 w-10 mx-auto" : "px-3 py-2.5"
                                             )}
+                                            title={isCollapsed ? item.label : ""}
                                         >
-                                            <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                                            <span className="flex-1 text-left">{item.label}</span>
-                                            {hasChildren && (
-                                                isExpanded ? (
-                                                    <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                                                ) : (
-                                                    <ChevronRight className="w-4 h-4 flex-shrink-0" />
-                                                )
+                                            <item.icon className={cn("w-4 h-4 flex-shrink-0", !isCollapsed && "mr-3")} />
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="flex-1 text-left truncate">{item.label}</span>
+                                                    {hasChildren && (
+                                                        isExpanded ? (
+                                                            <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                                                        ) : (
+                                                            <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                                                        )
+                                                    )}
+                                                </>
                                             )}
                                         </button>
                                     )}
 
                                     {/* Children Items */}
-                                    {hasChildren && isExpanded && (
+                                    {hasChildren && isExpanded && !isCollapsed && (
                                         <div className="mt-1 ml-4 pl-4 border-l-2 border-slate-200 space-y-1">
                                             {item.children!.map((child) => {
                                                 const childActive = pathname === child.href;
@@ -191,15 +225,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </nav>
 
                     {/* User Profile Snippet */}
-                    <div className="p-4 border-t border-slate-100">
-                        <div className="flex items-center">
-                            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-sm">
+                    <div className={cn(
+                        "p-4 border-t border-slate-100 transition-all duration-300",
+                        isCollapsed ? "flex justify-center" : "px-4"
+                    )}>
+                        <div className="flex items-center overflow-hidden">
+                            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-sm flex-shrink-0">
                                 JD
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm font-medium">John Doe</p>
-                                <p className="text-xs text-slate-500">Pro Plan</p>
-                            </div>
+                            {!isCollapsed && (
+                                <div className="ml-3 truncate opacity-100 transition-opacity duration-300">
+                                    <p className="text-sm font-medium truncate">John Doe</p>
+                                    <p className="text-xs text-slate-500 truncate">Pro Plan</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
