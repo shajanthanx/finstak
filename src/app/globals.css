@@ -36,3 +36,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Fix input text color - ensure typed text is dark and visible */
+input,
+textarea,
+select {
+  color: #0f172a !important; /* slate-900 - dark text for good visibility */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important; /* slate-500 - darker grey for better visibility */
+  opacity: 1 !important;
+}
+
+/* For inputs with light backgrounds, use even darker placeholder */
+input[class*="bg-slate-50"]::placeholder,
+input[class*="bg-white"]::placeholder,
+textarea[class*="bg-slate-50"]::placeholder,
+textarea[class*="bg-white"]::placeholder {
+  color: #475569 !important; /* slate-600 - even darker for light backgrounds */
+  opacity: 1 !important;
+}
+
+/* Fix select option text color */
+select option {
+  color: #0f172a !important; /* slate-900 - dark text for options */
+  background-color: white !important;
+}

@@ -22,6 +22,7 @@ import { SpendingPieChart } from "@/components/dashboard/SpendingPieChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { BudgetStatus } from "@/components/dashboard/BudgetStatus";
 import { UpcomingBills } from "@/components/dashboard/UpcomingBills";
+import { SetupBanner } from "@/components/setup/SetupBanner";
 
 export default function AnalyticsPage() {
     const { data: stats } = useQuery({ queryKey: ['analyticsStats'], queryFn: api.getAnalyticsStats });
@@ -73,6 +74,7 @@ export default function AnalyticsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
+            <SetupBanner />
             {/* KPI Stats from Home */}
             <KPIStats />
 

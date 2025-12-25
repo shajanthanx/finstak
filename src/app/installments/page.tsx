@@ -7,6 +7,7 @@ import { Plus, Layers, DollarSign, Calendar, ShoppingBag, Clock } from "lucide-r
 import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Installment } from "@/types";
+import { getInstallmentCategories, INSTALLMENT_CATEGORIES } from "@/config/categories";
 
 export default function InstallmentsPage() {
     const queryClient = useQueryClient();
@@ -17,7 +18,7 @@ export default function InstallmentsPage() {
         paidAmount: 0,
         totalMonths: 12,
         provider: '',
-        category: 'Tech'
+        category: getInstallmentCategories()[0] || 'Tech'
     });
 
     const { data: installments, isLoading } = useQuery({
@@ -30,7 +31,7 @@ export default function InstallmentsPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['installments'] });
             setIsModalOpen(false);
-            setNewPlan({ name: '', totalAmount: 0, paidAmount: 0, totalMonths: 12, provider: '', category: 'Tech' });
+            setNewPlan({ name: '', totalAmount: 0, paidAmount: 0, totalMonths: 12, provider: '', category: getInstallmentCategories()[0] || 'Tech' });
         }
     });
 
@@ -164,22 +165,20 @@ export default function InstallmentsPage() {
                 <form onSubmit={handleAddSubmit} className="space-y-4">
                     <div>
                         <label className="block text-xs font-medium text-slate-500 mb-1">Item Name</label>
-                        <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. iPhone 15" value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} />
+                        <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900" placeholder="e.g. iPhone 15" value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-slate-500 mb-1">Provider</label>
-                            <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. Equipment Financing" value={newPlan.provider} onChange={e => setNewPlan({ ...newPlan, provider: e.target.value })} />
+                            <input required type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900" placeholder="e.g. Equipment Financing" value={newPlan.provider} onChange={e => setNewPlan({ ...newPlan, provider: e.target.value })} />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-slate-500 mb-1">Category</label>
-                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={newPlan.category} onChange={e => setNewPlan({ ...newPlan, category: e.target.value })}>
-                                <option>Tech</option>
-                                <option>Home</option>
-                                <option>Travel</option>
-                                <option>Fashion</option>
-                                <option>Other</option>
+                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900" value={newPlan.category} onChange={e => setNewPlan({ ...newPlan, category: e.target.value })}>
+                                {INSTALLMENT_CATEGORIES.map(cat => (
+                                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -189,12 +188,12 @@ export default function InstallmentsPage() {
                             <label className="block text-xs font-medium text-slate-500 mb-1">Total Amount</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                                <input required type="number" className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="0.00" value={newPlan.totalAmount} onChange={e => setNewPlan({ ...newPlan, totalAmount: Number(e.target.value) })} />
+                                <input required type="number" className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900" placeholder="0.00" value={newPlan.totalAmount} onChange={e => setNewPlan({ ...newPlan, totalAmount: Number(e.target.value) })} />
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-slate-500 mb-1">Duration (Months)</label>
-                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={newPlan.totalMonths} onChange={e => setNewPlan({ ...newPlan, totalMonths: Number(e.target.value) })}>
+                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900" value={newPlan.totalMonths} onChange={e => setNewPlan({ ...newPlan, totalMonths: Number(e.target.value) })}>
                                 <option value="3">3 Months</option>
                                 <option value="6">6 Months</option>
                                 <option value="12">12 Months</option>

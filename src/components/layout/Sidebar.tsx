@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,9 +17,12 @@ import {
     ListTodo,
     PanelLeftClose,
     PanelLeftOpen,
+    LogOut,
+    Settings,
     type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -46,8 +49,8 @@ const navItems: NavItem[] = [
             { href: "/analytics", icon: PieChart, label: "Analytics" },
             { href: "/transactions", icon: Wallet, label: "Transactions" },
             { href: "/budget", icon: Target, label: "Budget" },
-
             { href: "/installments", icon: Layers, label: "Installments" },
+            { href: "/setup", icon: Settings, label: "Setup" },
         ]
     },
     {
@@ -61,8 +64,63 @@ const navItems: NavItem[] = [
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const { user, signOut } = useAuth();
     const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close user menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        }
+
+        if (userMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [userMenuOpen]);
+
+    // Get user name from metadata
+    const getUserName = () => {
+        if (user?.user_metadata?.full_name) {
+            return user.user_metadata.full_name;
+        }
+        if (user?.user_metadata?.name) {
+            return user.user_metadata.name;
+        }
+        if (user?.email) {
+            // Fallback to email if no name
+            return user.email.split('@')[0];
+        }
+        return "User";
+    };
+
+    // Get user email
+    const getUserEmail = () => {
+        return user?.email || "";
+    };
+
+    // Get user initials from name
+    const getUserInitials = () => {
+        const name = getUserName();
+        if (name && name !== "User") {
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+        return "U";
+    };
+
+    const handleSignOut = async () => {
+        await signOut();
+        setUserMenuOpen(false);
+    };
 
     // Auto-expand parent module when navigating to a child page
     useEffect(() => {
@@ -225,22 +283,71 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </nav>
 
                     {/* User Profile Snippet */}
-                    <div className={cn(
-                        "p-4 border-t border-slate-100 transition-all duration-300",
-                        isCollapsed ? "flex justify-center" : "px-4"
-                    )}>
-                        <div className="flex items-center overflow-hidden">
-                            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-sm flex-shrink-0">
-                                JD
-                            </div>
-                            {!isCollapsed && (
-                                <div className="ml-3 truncate opacity-100 transition-opacity duration-300">
-                                    <p className="text-sm font-medium truncate">John Doe</p>
-                                    <p className="text-xs text-slate-500 truncate">Pro Plan</p>
+                    {user && (
+                        <div className={cn(
+                            "p-4 border-t border-slate-100 transition-all duration-300 relative",
+                            isCollapsed ? "flex justify-center" : "px-4"
+                        )} ref={userMenuRef}>
+                            {!isCollapsed ? (
+                                <>
+                                    <button
+                                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                        className="w-full flex items-center gap-3 rounded-lg hover:bg-slate-50 transition-colors p-2 -m-2"
+                                    >
+                                        <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-medium text-sm flex-shrink-0">
+                                            {getUserInitials()}
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <p className="text-sm font-medium text-slate-900 truncate">{getUserName()}</p>
+                                            <p className="text-xs text-slate-500 truncate">{getUserEmail()}</p>
+                                        </div>
+                                        <ChevronDown className={cn(
+                                            "w-4 h-4 text-slate-400 transition-transform flex-shrink-0",
+                                            userMenuOpen && "rotate-180"
+                                        )} />
+                                    </button>
+
+                                    {/* User Menu Dropdown */}
+                                    {userMenuOpen && (
+                                        <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                            <button
+                                                onClick={handleSignOut}
+                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                Sign out
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                    className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-medium text-sm"
+                                    title={getUserName()}
+                                >
+                                    {getUserInitials()}
+                                </button>
+                            )}
+
+                            {/* User Menu Dropdown for Collapsed Sidebar */}
+                            {isCollapsed && userMenuOpen && (
+                                <div className="absolute bottom-full left-4 mb-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50 min-w-[200px]">
+                                    <div className="px-4 py-2 border-b border-slate-100">
+                                        <p className="text-sm font-medium text-slate-900 truncate">{getUserName()}</p>
+                                        <p className="text-xs text-slate-500 truncate">{getUserEmail()}</p>
+                                    </div>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Sign out
+                                    </button>
                                 </div>
                             )}
                         </div>
-                    </div>
+                    )}
                 </div>
             </aside>
         </>

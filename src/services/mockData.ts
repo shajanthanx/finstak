@@ -1,4 +1,5 @@
 import { Transaction, Budget, Installment } from '@/types';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, DEFAULT_BUDGET_LIMITS, getCategoryIcon } from '@/config/categories';
 
 export const monthlyTrendData = [
     { name: 'Jan', income: 4500, expense: 3200, savings: 1300 },
@@ -10,27 +11,24 @@ export const monthlyTrendData = [
     { name: 'Jul', income: 6200, expense: 4300, savings: 1900 },
 ];
 
+// Generate initial budgets from category config
+export const initialBudgets: Budget[] = EXPENSE_CATEGORIES.map(cat => ({
+    category: cat.value,
+    limit: DEFAULT_BUDGET_LIMITS[cat.value] || 500,
+    color: cat.color
+}));
+
+// Initial transactions using category config
 export const initialTransactions: Transaction[] = [
-    { id: 1, name: 'Whole Foods Market', category: 'Food', date: '2023-10-25', amount: 124.50, type: 'expense', icon: '🛒' },
-    { id: 2, name: 'Tech Solutions Inc.', category: 'Income', date: '2023-10-24', amount: 3200.00, type: 'income', icon: '💼' },
-    { id: 3, name: 'Netflix Subscription', category: 'Entertainment', date: '2023-10-24', amount: 15.99, type: 'expense', icon: '🎬' },
-    { id: 4, name: 'Uber Ride', category: 'Transport', date: '2023-10-23', amount: 24.20, type: 'expense', icon: '🚗' },
-    { id: 5, name: 'Electric Bill', category: 'Utilities', date: '2023-10-21', amount: 145.00, type: 'expense', icon: '⚡' },
-    { id: 6, name: 'Trader Joes', category: 'Food', date: '2023-10-20', amount: 85.30, type: 'expense', icon: '🛒' },
-    { id: 7, name: 'Shell Station', category: 'Transport', date: '2023-10-19', amount: 45.00, type: 'expense', icon: '⛽' },
-    { id: 8, name: 'Zara', category: 'Shopping', date: '2023-10-18', amount: 120.00, type: 'expense', icon: '🛍️' },
+    { id: 1, name: 'Whole Foods Market', category: 'Food', date: '2023-10-25', amount: 124.50, type: 'expense', icon: getCategoryIcon('Food') },
+    { id: 2, name: 'Tech Solutions Inc.', category: 'Salary', date: '2023-10-24', amount: 3200.00, type: 'income', icon: getCategoryIcon('Salary') },
+    { id: 3, name: 'Netflix Subscription', category: 'Entertainment', date: '2023-10-24', amount: 15.99, type: 'expense', icon: getCategoryIcon('Entertainment') },
+    { id: 4, name: 'Uber Ride', category: 'Transport', date: '2023-10-23', amount: 24.20, type: 'expense', icon: getCategoryIcon('Transport') },
+    { id: 5, name: 'Electric Bill', category: 'Utilities', date: '2023-10-21', amount: 145.00, type: 'expense', icon: getCategoryIcon('Utilities') },
+    { id: 6, name: 'Trader Joes', category: 'Food', date: '2023-10-20', amount: 85.30, type: 'expense', icon: getCategoryIcon('Food') },
+    { id: 7, name: 'Shell Station', category: 'Transport', date: '2023-10-19', amount: 45.00, type: 'expense', icon: getCategoryIcon('Transport') },
+    { id: 8, name: 'Zara', category: 'Shopping', date: '2023-10-18', amount: 120.00, type: 'expense', icon: getCategoryIcon('Shopping') },
 ];
-
-export const initialBudgets: Budget[] = [
-    { category: 'Food', limit: 600, color: '#52525b' },
-    { category: 'Transport', limit: 300, color: '#a1a1aa' },
-    { category: 'Entertainment', limit: 200, color: '#e4e4e7' },
-    { category: 'Utilities', limit: 250, color: '#fbbf24' },
-    { category: 'Shopping', limit: 400, color: '#8b5cf6' },
-    { category: 'Housing', limit: 2000, color: '#18181b' },
-];
-
-
 
 export const initialInstallments: Installment[] = [
     {

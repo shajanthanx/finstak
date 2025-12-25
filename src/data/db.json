@@ -1,4 +1,118 @@
 {
+  "categories": [
+    {
+      "id": "1",
+      "name": "Food",
+      "type": "expense",
+      "icon": "🍔",
+      "color": "#52525b",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "2",
+      "name": "Transport",
+      "type": "expense",
+      "icon": "🚗",
+      "color": "#a1a1aa",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "3",
+      "name": "Entertainment",
+      "type": "expense",
+      "icon": "🎬",
+      "color": "#e4e4e7",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "4",
+      "name": "Utilities",
+      "type": "expense",
+      "icon": "⚡",
+      "color": "#fbbf24",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "5",
+      "name": "Shopping",
+      "type": "expense",
+      "icon": "🛍️",
+      "color": "#8b5cf6",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "6",
+      "name": "Housing",
+      "type": "expense",
+      "icon": "🏠",
+      "color": "#18181b",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "7",
+      "name": "Healthcare",
+      "type": "expense",
+      "icon": "🏥",
+      "color": "#ef4444",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "8",
+      "name": "Education",
+      "type": "expense",
+      "icon": "📚",
+      "color": "#3b82f6",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "9",
+      "name": "Bills",
+      "type": "expense",
+      "icon": "📄",
+      "color": "#10b981",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "10",
+      "name": "Other",
+      "type": "expense",
+      "icon": "📦",
+      "color": "#6b7280",
+      "budgetingEnabled": true
+    },
+    {
+      "id": "11",
+      "name": "Salary",
+      "type": "income",
+      "icon": "💼",
+      "color": "#059669",
+      "budgetingEnabled": false
+    },
+    {
+      "id": "12",
+      "name": "Freelance",
+      "type": "income",
+      "icon": "💻",
+      "color": "#0d9488",
+      "budgetingEnabled": false
+    },
+    {
+      "id": "13",
+      "name": "Investment",
+      "type": "income",
+      "icon": "📈",
+      "color": "#14b8a6",
+      "budgetingEnabled": false
+    },
+    {
+      "id": "14",
+      "name": "Other Income",
+      "type": "income",
+      "icon": "💰",
+      "color": "#2dd4bf",
+      "budgetingEnabled": false
+    }
+  ],
   "transactions": [
     {
       "name": "Chicken",
@@ -112,6 +226,26 @@
       "category": "Housing",
       "limit": 2000,
       "color": "#18181b"
+    },
+    {
+      "category": "Healthcare",
+      "limit": 500,
+      "color": "#ef4444"
+    },
+    {
+      "category": "Education",
+      "limit": 300,
+      "color": "#3b82f6"
+    },
+    {
+      "category": "Bills",
+      "limit": 150,
+      "color": "#10b981"
+    },
+    {
+      "category": "Other",
+      "limit": 200,
+      "color": "#6b7280"
     }
   ],
   "installments": [
@@ -213,28 +347,5 @@
       "savings": 1900
     }
   ],
-  "tasks": [
-    {
-      "id": 1766646289068,
-      "title": "Edel Sein ",
-      "category": "Personal",
-      "priority": "high",
-      "dueDate": "2025-12-25",
-      "completed": false,
-      "status": "todo",
-      "subtasks": [],
-      "notes": ""
-    },
-    {
-      "id": 1766646184336,
-      "title": "B2G deployement",
-      "category": "Personal",
-      "priority": "medium",
-      "dueDate": "2025-12-25",
-      "completed": false,
-      "status": "todo",
-      "subtasks": [],
-      "notes": ""
-    }
-  ]
+  "tasks": []
 }

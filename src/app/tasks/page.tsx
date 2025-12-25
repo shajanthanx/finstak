@@ -310,7 +310,7 @@ export default function TasksPage() {
                 <input
                     type="text"
                     placeholder="Add a new task..."
-                    className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-400"
+                    className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                     value={quickAddText}
                     onChange={(e) => setQuickAddText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
@@ -320,7 +320,7 @@ export default function TasksPage() {
                         <select
                             value={quickAddPriority}
                             onChange={(e) => setQuickAddPriority(e.target.value as TaskPriority)}
-                            className="w-full appearance-none px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                            className="w-full appearance-none px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                         >
                             <option value="low">Low</option>
                             <option value="medium">Medium</option>

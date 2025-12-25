@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, Plus, Trash2, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, Tag } from "lucide-react";
 import { useState } from "react";
 import { Transaction } from "@/types";
+import { getAllTransactionCategories, getExpenseCategories, getIncomeCategories, getCategoryIcon } from "@/config/categories";
+import { SetupBanner } from "@/components/setup/SetupBanner";
 
 export default function TransactionsPage() {
     const queryClient = useQueryClient();
@@ -15,7 +17,7 @@ export default function TransactionsPage() {
     const [newTx, setNewTx] = useState<Partial<Transaction>>({
         name: '',
         amount: '' as unknown as number,
-        category: 'Food',
+        category: getExpenseCategories()[0] || 'Food',
         type: 'expense',
         date: new Date().toISOString().split('T')[0]
     });
@@ -32,7 +34,9 @@ export default function TransactionsPage() {
             setNewTx(prev => ({
                 name: '',
                 amount: '' as unknown as number,
-                category: 'Food',
+                category: prev.type === 'income' 
+                    ? getIncomeCategories()[0] || 'Salary'
+                    : getExpenseCategories()[0] || 'Food',
                 type: prev.type,
                 date: new Date().toISOString().split('T')[0]
             }));
@@ -60,7 +64,7 @@ export default function TransactionsPage() {
             ...newTx,
             id: Date.now(),
             amount: Number(newTx.amount),
-            icon: newTx.type === 'income' ? '💰' : '💳'
+            icon: getCategoryIcon(newTx.category || 'Other')
         } as Transaction);
     };
 
@@ -68,6 +72,7 @@ export default function TransactionsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in max-w-[1600px] mx-auto">
+            <SetupBanner />
             {/* Quick Add Toolbar - Horizontal Layout */}
             <Card className="p-1 border-slate-200 shadow-sm overflow-visible bg-white relative z-10">
                 <form onSubmit={handleSubmit} className="flex flex-col xl:flex-row items-stretch xl:items-center gap-2 p-2">
@@ -76,7 +81,7 @@ export default function TransactionsPage() {
                     <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
                         <button
                             type="button"
-                            onClick={() => setNewTx({ ...newTx, type: 'expense' })}
+                            onClick={() => setNewTx({ ...newTx, type: 'expense', category: getExpenseCategories()[0] || 'Food' })}
                             className={`flex items-center px-3 py-2 rounded-md text-xs font-bold transition-all ${newTx.type === 'expense'
                                     ? 'bg-white text-slate-900 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700'
@@ -86,7 +91,7 @@ export default function TransactionsPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setNewTx({ ...newTx, type: 'income' })}
+                            onClick={() => setNewTx({ ...newTx, type: 'income', category: getIncomeCategories()[0] || 'Salary' })}
                             className={`flex items-center px-3 py-2 rounded-md text-xs font-bold transition-all ${newTx.type === 'income'
                                     ? 'bg-white text-emerald-600 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700'
@@ -114,18 +119,18 @@ export default function TransactionsPage() {
                         <div className="relative">
                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                             <select
-                                className="pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 appearance-none cursor-pointer w-full xl:w-40"
+                                className="pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 appearance-none cursor-pointer w-full xl:w-40"
                                 value={newTx.category}
                                 onChange={(e) => setNewTx({ ...newTx, category: e.target.value })}
                             >
-                                <option>Food</option>
-                                <option>Transport</option>
-                                <option>Entertainment</option>
-                                <option>Utilities</option>
-                                <option>Shopping</option>
-                                <option>Housing</option>
-                                <option>Income</option>
-                                <option>Other</option>
+                                {newTx.type === 'income' 
+                                    ? getIncomeCategories().map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))
+                                    : getExpenseCategories().map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))
+                                }
                             </select>
                         </div>
                     </div>
@@ -134,7 +139,7 @@ export default function TransactionsPage() {
                     <input
                         type="text"
                         required
-                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 placeholder:text-slate-400"
+                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                         placeholder="Description (e.g. Grocery Shopping)"
                         value={newTx.name}
                         onChange={(e) => setNewTx({ ...newTx, name: e.target.value })}
@@ -186,7 +191,7 @@ export default function TransactionsPage() {
                             placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
+                            className="pl-9 pr-4 py-2 w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                         />
                     </div>
                     <div className="relative">

@@ -30,7 +30,7 @@ export function CashFlowChart() {
                     <h3 className="font-semibold text-slate-900">Cash Flow</h3>
                     <p className="text-sm text-slate-500">Income vs Expenses over time</p>
                 </div>
-                <select className="bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-md px-2 py-1 outline-none">
+                <select className="bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-md px-2 py-1 outline-none cursor-pointer">
                     <option>Last 6 Months</option>
                     <option>This Year</option>
                 </select>

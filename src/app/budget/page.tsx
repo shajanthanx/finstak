@@ -2,11 +2,13 @@
 
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
+import { categoryService } from "@/services/categories";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, AlertCircle, CheckCircle2, Save } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { Budget } from "@/types";
+import { Budget, Category } from "@/types";
+import { getCategoryIcon } from "@/config/categories";
 
 export default function BudgetPage() {
     const queryClient = useQueryClient();
@@ -15,6 +17,7 @@ export default function BudgetPage() {
 
     const { data: transactions } = useQuery({ queryKey: ['transactions'], queryFn: api.getTransactions });
     const { data: budgets } = useQuery({ queryKey: ['budgets'], queryFn: api.getBudgets });
+    const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: categoryService.getAll });
 
     const updateMutation = useMutation({
         mutationFn: ({ category, limit }: { category: string; limit: number }) =>
@@ -27,7 +30,7 @@ export default function BudgetPage() {
     });
 
     const categoryStats = useMemo(() => {
-        if (!transactions || !budgets) return [];
+        if (!transactions || !budgets || !categories) return [];
 
         const spentMap = transactions.reduce((acc, t) => {
             if (t.type === 'expense') {
@@ -36,19 +39,25 @@ export default function BudgetPage() {
             return acc;
         }, {} as Record<string, number>);
 
-        return budgets.map(b => {
-            const spent = spentMap[b.category] || 0;
-            const remaining = b.limit - spent;
-            const percent = (spent / b.limit) * 100;
-            return {
-                ...b,
-                spent,
-                remaining,
-                percent,
-                isOverBudget: spent > b.limit
-            };
-        });
-    }, [transactions, budgets]);
+        // Filter budgets based on budget-enabled categories
+        return budgets
+            .filter(b => {
+                const category = categories.find((c: Category) => c.name === b.category);
+                return category ? category.budgetingEnabled : true; // Default to true if category not found (fallback)
+            })
+            .map(b => {
+                const spent = spentMap[b.category] || 0;
+                const remaining = b.limit - spent;
+                const percent = (spent / b.limit) * 100;
+                return {
+                    ...b,
+                    spent,
+                    remaining,
+                    percent,
+                    isOverBudget: spent > b.limit
+                };
+            });
+    }, [transactions, budgets, categories]);
 
     const totalBudget = categoryStats.reduce((acc, curr) => acc + curr.limit, 0);
     const totalSpent = categoryStats.reduce((acc, curr) => acc + curr.spent, 0);
@@ -64,7 +73,7 @@ export default function BudgetPage() {
         }
     };
 
-    if (!transactions || !budgets) return <div className="p-8 animate-pulse">Loading...</div>;
+    if (!transactions || !budgets || !categories) return <div className="p-8 animate-pulse">Loading...</div>;
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -103,11 +112,7 @@ export default function BudgetPage() {
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center space-x-3">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 text-xl border border-slate-100`}>
-                                        {cat.category === 'Food' ? '🍔' :
-                                            cat.category === 'Transport' ? '🚗' :
-                                                cat.category === 'Entertainment' ? '🎬' :
-                                                    cat.category === 'Shopping' ? '🛍️' :
-                                                        cat.category === 'Utilities' ? '⚡' : '🏠'}
+                                        {getCategoryIcon(cat.category)}
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-slate-900">{cat.category}</h3>
