@@ -3,6 +3,10 @@ import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat,
 export const api = {
     getTransactions: async (): Promise<Transaction[]> => {
         const res = await fetch('/api/transactions');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch transactions');
+        }
         return res.json();
     },
 
@@ -11,29 +15,47 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(transaction),
         });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to create transaction');
+        }
         return res.json();
     },
 
     deleteTransaction: async (id: number): Promise<void> => {
-        await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to delete transaction');
+        }
     },
 
     getBudgets: async (): Promise<Budget[]> => {
         const res = await fetch('/api/budgets');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch budgets');
+        }
         return res.json();
     },
 
     updateBudget: async (category: string, limit: number): Promise<void> => {
-        await fetch('/api/budgets', {
+        const res = await fetch('/api/budgets', {
             method: 'PUT',
             body: JSON.stringify({ category, limit }),
         });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to update budget');
+        }
     },
-
-
 
     getInstallments: async (): Promise<Installment[]> => {
         const res = await fetch('/api/installments');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch installments');
+        }
         return res.json();
     },
 
@@ -42,31 +64,55 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(installment),
         });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to create installment');
+        }
         return res.json();
     },
 
     getMonthlyTrends: async (): Promise<MonthlyTrend[]> => {
         const res = await fetch('/api/stats?type=trends');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch monthly trends');
+        }
         return res.json();
     },
 
     getRecurringBills: async (): Promise<RecurringBill[]> => {
         const res = await fetch('/api/stats?type=recurring');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch recurring bills');
+        }
         return res.json();
     },
 
     getKPIs: async (): Promise<KPIStat[]> => {
         const res = await fetch('/api/stats?type=kpi');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch KPIs');
+        }
         return res.json();
     },
 
     getAnalyticsStats: async (): Promise<AnalyticsStat[]> => {
         const res = await fetch('/api/stats?type=analytics');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch analytics stats');
+        }
         return res.json();
     },
 
     getTasks: async (): Promise<Task[]> => {
         const res = await fetch('/api/tasks');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch tasks');
+        }
         return res.json();
     },
 
@@ -75,6 +121,10 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(task),
         });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to create task');
+        }
         return res.json();
     },
 
@@ -83,10 +133,27 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify(task),
         });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to update task');
+        }
         return res.json();
     },
 
     deleteTask: async (id: number): Promise<void> => {
-        await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to delete task');
+        }
+    },
+
+    getSetupStatus: async (): Promise<{ initialized: boolean }> => {
+        const res = await fetch('/api/setup');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to check setup status');
+        }
+        return res.json();
     }
 };
