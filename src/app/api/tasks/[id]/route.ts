@@ -1,35 +1,129 @@
 import { NextResponse } from 'next/server';
-import { readDB, writeDB } from '@/lib/db';
+import { createClient } from '@/lib/supabase/server';
 
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    await new Promise(r => setTimeout(r, 500));
-    const { id: idStr } = await params;
-    const body = await request.json();
-    const db = await readDB();
-    const id = parseInt(idStr);
-    const index = db.tasks.findIndex((t: any) => t.id === id);
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (index !== -1) {
-        db.tasks[index] = { ...db.tasks[index], ...body };
-        await writeDB(db);
-        return NextResponse.json(db.tasks[index]);
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    try {
+        const { id } = await params;
+        const body = await request.json();
+        const { subtasks, dueDate, ...otherData } = body;
+
+        // Transform camelCase to snake_case for database
+        const taskUpdates: any = { ...otherData };
+        if (dueDate !== undefined) {
+            taskUpdates.due_date = dueDate;
+        }
+
+        // Update task
+        const { data: task, error: taskError } = await supabase
+            .from('tasks')
+            .update(taskUpdates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (taskError) {
+            console.error('Error updating task:', taskError);
+            return NextResponse.json({ error: taskError.message }, { status: 500 });
+        }
+
+        if (!task) {
+            return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+        }
+
+        // Handle subtasks if provided
+        let finalSubtasks = [];
+
+        if (subtasks) {
+            // Delete existing subtasks
+            await supabase
+                .from('subtasks')
+                .delete()
+                .eq('task_id', id);
+
+            // Insert new subtasks
+            if (subtasks.length > 0) {
+                const subtasksToInsert = subtasks.map((st: any) => ({
+                    task_id: parseInt(id),
+                    title: st.title,
+                    completed: st.completed || false
+                }));
+
+                const { data: insertedSubtasks, error: subtasksError } = await supabase
+                    .from('subtasks')
+                    .insert(subtasksToInsert)
+                    .select();
+
+                if (subtasksError) {
+                    console.error('Error updating subtasks:', subtasksError);
+                }
+                finalSubtasks = insertedSubtasks || [];
+            }
+        } else {
+            // Fetch existing subtasks if not provided in update
+            const { data: existingSubtasks } = await supabase
+                .from('subtasks')
+                .select('*')
+                .eq('task_id', id);
+            finalSubtasks = existingSubtasks || [];
+        }
+
+        // Return transformed task and subtasks
+        return NextResponse.json({
+            id: task.id,
+            title: task.title,
+            category: task.category,
+            priority: task.priority,
+            dueDate: task.due_date,
+            completed: task.completed,
+            status: task.status,
+            notes: task.notes,
+            subtasks: finalSubtasks.map(st => ({
+                id: st.id,
+                title: st.title,
+                completed: st.completed
+            }))
+        });
+    } catch (err) {
+        console.error('Error parsing request:', err);
+        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
 }
 
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    await new Promise(r => setTimeout(r, 500));
-    const { id: idStr } = await params;
-    const db = await readDB();
-    const id = parseInt(idStr);
-    db.tasks = db.tasks.filter((t: any) => t.id !== id);
-    await writeDB(db);
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Delete task (subtasks will be deleted automatically via CASCADE)
+    const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error deleting task:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
 }

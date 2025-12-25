@@ -1,56 +1,90 @@
 import { NextResponse } from 'next/server';
-import { readDB, writeDB } from '@/lib/db';
-import { EXPENSE_CATEGORIES, DEFAULT_BUDGET_LIMITS, getCategoryConfig } from '@/config/categories';
+import { createClient } from '@/lib/supabase/server';
 
 /**
- * Initialize finance system with default budgets
- * This creates budgets for all expense categories if they don't exist
+ * Initialize finance system with default categories and budgets
+ * This creates categories and budgets for all expense categories if they don't exist
  */
 export async function POST(request: Request) {
-    await new Promise(r => setTimeout(r, 500));
-    const db = await readDB();
-    
-    // Get existing budget categories
-    const existingCategories = new Set(db.budgets.map((b: any) => b.category));
-    
-    // Create budgets for all expense categories that don't exist
-    const newBudgets = EXPENSE_CATEGORIES
-        .filter(cat => !existingCategories.has(cat.value))
-        .map(cat => ({
-            category: cat.value,
-            limit: DEFAULT_BUDGET_LIMITS[cat.value] || 500,
-            color: cat.color
-        }));
-    
-    // Add new budgets to database
-    if (newBudgets.length > 0) {
-        db.budgets.push(...newBudgets);
-        await writeDB(db);
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    return NextResponse.json({ 
-        success: true, 
-        initialized: newBudgets.length,
-        budgets: db.budgets 
-    });
+
+    try {
+        // Call database function to initialize default categories
+        const { error: categoriesError } = await supabase.rpc('initialize_default_categories', {
+            p_user_id: user.id
+        });
+
+        if (categoriesError) {
+            console.error('Error initializing categories:', categoriesError);
+        }
+
+        // Call database function to initialize default budgets
+        const { error: budgetsError } = await supabase.rpc('initialize_default_budgets', {
+            p_user_id: user.id
+        });
+
+        if (budgetsError) {
+            console.error('Error initializing budgets:', budgetsError);
+            return NextResponse.json({ error: budgetsError.message }, { status: 500 });
+        }
+
+        // Fetch created budgets
+        const { data: budgetsData } = await supabase
+            .from('budgets')
+            .select('*')
+            .eq('user_id', user.id);
+
+        const budgets = budgetsData?.map(b => ({
+            category: b.category,
+            limit: b.budget_limit,
+            color: b.color
+        })) || [];
+
+        return NextResponse.json({
+            success: true,
+            initialized: budgets.length,
+            budgets: budgets
+        });
+    } catch (err) {
+        console.error('Error in setup:', err);
+        return NextResponse.json({ error: 'Setup failed' }, { status: 500 });
+    }
 }
 
 /**
  * Check if system is initialized
  */
 export async function GET() {
-    await new Promise(r => setTimeout(r, 300));
-    const db = await readDB();
-    
-    const existingCategories = new Set(db.budgets.map((b: any) => b.category));
-    const requiredCategories = EXPENSE_CATEGORIES.map(cat => cat.value);
-    const missingCategories = requiredCategories.filter(cat => !existingCategories.has(cat));
-    
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if any categories exist for the user
+    const { count, error } = await supabase
+        .from('categories')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error checking setup status:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // System is initialized if there is at least one category
+    const initialized = (count || 0) > 0;
+
     return NextResponse.json({
-        initialized: missingCategories.length === 0,
-        missingCategories,
-        existingBudgets: db.budgets.length,
-        requiredBudgets: requiredCategories.length
+        initialized: initialized,
+        missingCategories: initialized ? [] : ['Setup required'],
+        existingBudgets: 0, // Not used anymore for setup logic
+        requiredBudgets: 0   // Not used anymore for setup logic
     });
 }
-

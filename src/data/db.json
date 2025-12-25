@@ -78,7 +78,7 @@
       "type": "expense",
       "icon": "📦",
       "color": "#6b7280",
-      "budgetingEnabled": true
+      "budgetingEnabled": false
     },
     {
       "id": "11",

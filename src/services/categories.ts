@@ -28,7 +28,9 @@ export const categoryService = {
     },
 
     delete: async (id: string): Promise<void> => {
-        // Implement when API supports it
-        throw new Error('Not implemented');
+        const res = await fetch(`/api/categories?id=${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete category');
     }
 };

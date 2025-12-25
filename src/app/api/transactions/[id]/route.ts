@@ -1,14 +1,29 @@
 import { NextResponse } from 'next/server';
-import { readDB, writeDB } from '@/lib/db';
+import { createClient } from '@/lib/supabase/server';
 
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    await new Promise(r => setTimeout(r, 500));
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
-    const db = await readDB();
-    db.transactions = db.transactions.filter((t: any) => t.id !== Number(id));
-    await writeDB(db);
+
+    const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id); // Ensure user owns the transaction
+
+    if (error) {
+        console.error('Error deleting transaction:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
 }
