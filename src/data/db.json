@@ -215,96 +215,25 @@
   ],
   "tasks": [
     {
-      "id": 1766605841548,
-      "title": "dbdf",
+      "id": 1766646289068,
+      "title": "Edel Sein ",
       "category": "Personal",
-      "priority": "medium",
-      "dueDate": "2025-12-24",
+      "priority": "high",
+      "dueDate": "2025-12-25",
       "completed": false,
       "status": "todo",
       "subtasks": [],
       "notes": ""
     },
     {
-      "id": 1,
-      "title": "Review Project Goals",
-      "category": "Work",
-      "priority": "high",
-      "dueDate": "2023-10-28",
-      "completed": true,
-      "status": "done",
-      "subtasks": [
-        {
-          "id": 101,
-          "title": "Check emails",
-          "completed": true
-        },
-        {
-          "id": 102,
-          "title": "Update Jira",
-          "completed": false
-        }
-      ],
-      "notes": "loihjbkubkcsdcsddsgfb fdgbdf"
-    },
-    {
-      "id": 2,
-      "title": "Grocery Shopping",
+      "id": 1766646184336,
+      "title": "B2G deployement",
       "category": "Personal",
       "priority": "medium",
-      "dueDate": "2023-10-29",
-      "completed": true,
-      "status": "done",
-      "subtasks": [],
-      "notes": "Milk, Eggs, Breadtghcsdcsdscs"
-    },
-    {
-      "id": 3,
-      "title": "Doctor Appointment",
-      "category": "Health",
-      "priority": "high",
-      "dueDate": "2023-11-01",
-      "completed": true,
-      "status": "done",
-      "subtasks": [],
-      "notes": "j gujmdccsdcs"
-    },
-    {
-      "id": 4,
-      "title": "Call Mom",
-      "category": "Family",
-      "priority": "low",
-      "dueDate": "2023-10-30",
-      "completed": true,
-      "status": "done",
-      "subtasks": [],
-      "notes": ""
-    },
-    {
-      "id": 5,
-      "title": "Finish Project Report",
-      "category": "Work",
-      "priority": "high",
-      "dueDate": "2023-10-27",
+      "dueDate": "2025-12-25",
       "completed": false,
       "status": "todo",
-      "subtasks": [
-        {
-          "id": 501,
-          "title": "Draft outline",
-          "completed": true
-        },
-        {
-          "id": 502,
-          "title": "Gather data",
-          "completed": true
-        },
-        {
-          "id": 503,
-          "title": "Write summary",
-          "completed": false
-        }
-      ],
+      "subtasks": [],
       "notes": ""
     }
   ]
