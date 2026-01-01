@@ -79,10 +79,18 @@ export interface Subtask {
     completed: boolean;
 }
 
+export interface TaskCategory {
+    id: string;
+    name: string;
+    color: string;
+    icon?: string;
+}
+
 export interface Task {
     id: number;
     title: string;
     category: string;
+    categoryId?: string;
     priority: TaskPriority;
     dueDate: string;
     completed: boolean;

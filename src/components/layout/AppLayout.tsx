@@ -13,10 +13,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, loading } = useAuth();
-    
+
     // Don't show AppLayout on auth pages
     const isAuthPage = pathname?.startsWith('/auth');
-    
+
     // Redirect authenticated users away from auth pages
     // But only after auth check is complete
     useEffect(() => {
@@ -24,12 +24,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         if (loading) {
             return; // Wait for auth check to complete
         }
-        
+
         if (user && isAuthPage) {
             router.push('/');
         }
     }, [user, loading, isAuthPage, router]);
-    
+
     // Show loading state while checking auth (only on protected pages)
     if (!isAuthPage && loading) {
         return (
@@ -41,10 +41,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
         );
     }
-    
+
     if (isAuthPage) {
         return <>{children}</>;
     }
+
+    // Check for pages that need full width/height (no padding)
+    const isFullWidthPage = pathname?.startsWith('/tasks') || pathname?.startsWith('/setup');
 
     return (
         <QueryProvider>
@@ -52,8 +55,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
                 <main className="flex-1 flex flex-col h-screen overflow-hidden">
                     <Header onMenuClick={() => setSidebarOpen(true)} />
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
-                        <div className="max-w-7xl mx-auto">
+                    <div className={`flex-1 ${isFullWidthPage ? 'overflow-hidden flex flex-col' : 'overflow-y-auto p-4 sm:p-8'}`}>
+                        <div className={isFullWidthPage ? 'flex-1 h-full' : 'max-w-7xl mx-auto'}>
                             {children}
                         </div>
                     </div>

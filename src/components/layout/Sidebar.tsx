@@ -50,7 +50,6 @@ const navItems: NavItem[] = [
             { href: "/transactions", icon: Wallet, label: "Transactions" },
             { href: "/budget", icon: Target, label: "Budget" },
             { href: "/installments", icon: Layers, label: "Installments" },
-            { href: "/setup", icon: Settings, label: "Setup" },
         ]
     },
     {
@@ -59,6 +58,11 @@ const navItems: NavItem[] = [
         children: [
             { href: "/tasks", icon: ListTodo, label: "Tasks" },
         ]
+    },
+    {
+        href: "/setup",
+        icon: Settings,
+        label: "Setup"
     }
 ];
 

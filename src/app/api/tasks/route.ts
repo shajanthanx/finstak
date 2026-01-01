@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         const { subtasks, ...taskData } = body;
 
         // Transform camelCase keys to snake_case for DB
+        // Ensure categoryId is correctly mapped to category_id
         const dbTaskData = toSnakeCase(taskData);
 
         // Insert task

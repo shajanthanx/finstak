@@ -9,7 +9,8 @@ import {
     Filter, SlidersHorizontal
 } from "lucide-react";
 import { useState, useMemo, useRef } from "react";
-import { Task, TaskPriority, TaskStatus } from "@/types";
+import { Task, TaskPriority, TaskStatus, TaskCategory } from "@/types";
+import { TaskCategorySidebar } from "@/components/dashboard/TaskCategorySidebar";
 
 export default function TasksPage() {
     const queryClient = useQueryClient();
@@ -18,10 +19,12 @@ export default function TasksPage() {
     const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
     const [quickAddText, setQuickAddText] = useState('');
     const [quickAddPriority, setQuickAddPriority] = useState<TaskPriority>('medium');
+    const [quickAddCategoryId, setQuickAddCategoryId] = useState<string>('');
 
     // Filtering State
     const [basicFilter, setBasicFilter] = useState<'all' | 'high' | 'active' | 'completed'>('all');
     const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState({
         priorities: [] as TaskPriority[],
@@ -34,6 +37,7 @@ export default function TasksPage() {
     // Editing State
     const [editTitle, setEditTitle] = useState('');
     const [editPriority, setEditPriority] = useState<TaskPriority>('medium');
+    const [editCategoryId, setEditCategoryId] = useState<string>('Personal');
     const [editDate, setEditDate] = useState('');
 
     const dragItem = useRef<number | null>(null);
@@ -42,6 +46,11 @@ export default function TasksPage() {
     const { data: tasks = [], isLoading } = useQuery({
         queryKey: ['tasks'],
         queryFn: api.getTasks
+    });
+
+    const { data: taskCategories = [] } = useQuery({
+        queryKey: ['taskCategories'],
+        queryFn: api.getTaskCategories
     });
 
     const createMutation = useMutation({
@@ -151,6 +160,8 @@ export default function TasksPage() {
                 return matchPriority && matchStatus && matchCategory && matchDate;
             }
 
+            if (selectedCategoryId && t.categoryId !== selectedCategoryId) return false;
+
             let matchesBasic = true;
             if (basicFilter === 'high') matchesBasic = t.priority === 'high';
             else if (basicFilter === 'active') matchesBasic = !t.completed;
@@ -171,7 +182,7 @@ export default function TasksPage() {
             }
             return b.id - a.id;
         });
-    }, [tasks, basicFilter, timeFilter, advancedFilters, isAdvancedActive]);
+    }, [tasks, basicFilter, timeFilter, advancedFilters, isAdvancedActive, selectedCategoryId]);
 
     const handleAdvancedChange = (key: string, value: any) => {
         setAdvancedFilters(prev => {
@@ -202,20 +213,25 @@ export default function TasksPage() {
 
     const handleQuickAdd = () => {
         if (!quickAddText.trim()) return;
-        const newTask: Task = {
-            id: Date.now(),
+
+        // Determine category: Explicit selection > Sidebar selection > Default
+        const finalCategoryId = quickAddCategoryId || selectedCategoryId;
+
+        const newTask: Partial<Task> = {
             title: quickAddText,
-            category: 'Personal',
             priority: quickAddPriority,
+            categoryId: finalCategoryId || undefined,
+            category: 'Personal', // Fallback for legacy
             dueDate: new Date().toISOString().split('T')[0],
             completed: false,
             status: 'todo',
             subtasks: [],
             notes: ''
         };
-        createMutation.mutate(newTask);
+        createMutation.mutate(newTask as Task);
         setQuickAddText('');
         setQuickAddPriority('medium');
+        setQuickAddCategoryId('');
     };
 
     const startEditing = (task: Task) => {
@@ -223,6 +239,7 @@ export default function TasksPage() {
         setEditTitle(task.title);
         setEditPriority(task.priority);
         setEditDate(task.dueDate);
+        setEditCategoryId(task.categoryId || '');
         setExpandedTaskId(null);
         setExpandedTab(null);
     };
@@ -230,7 +247,12 @@ export default function TasksPage() {
     const saveEditing = (taskId: number) => {
         updateMutation.mutate({
             id: taskId,
-            task: { title: editTitle, priority: editPriority, dueDate: editDate }
+            task: {
+                title: editTitle,
+                priority: editPriority,
+                dueDate: editDate,
+                categoryId: editCategoryId || undefined
+            }
         });
         setEditingTaskId(null);
     };
@@ -304,421 +326,482 @@ export default function TasksPage() {
     if (isLoading) return <div className="p-8 animate-pulse">Loading tasks...</div>;
 
     return (
-        <div className="space-y-6 animate-fade-in h-[calc(100vh-140px)] flex flex-col">
-            {/* Quick Add Bar */}
-            <div className="flex flex-col md:flex-row gap-3">
-                <input
-                    type="text"
-                    placeholder="Add a new task..."
-                    className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    value={quickAddText}
-                    onChange={(e) => setQuickAddText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
-                />
-                <div className="flex gap-3">
-                    <div className="relative min-w-[120px]">
-                        <select
-                            value={quickAddPriority}
-                            onChange={(e) => setQuickAddPriority(e.target.value as TaskPriority)}
-                            className="w-full appearance-none px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-                        >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
-                    <button
-                        onClick={handleQuickAdd}
-                        className="px-6 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center whitespace-nowrap cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add
-                    </button>
+        <div className="flex h-full overflow-hidden">
+            <TaskCategorySidebar
+                selectedCategoryId={selectedCategoryId}
+                onSelectCategory={setSelectedCategoryId}
+            />
+
+            <div className="flex-1 flex flex-col min-w-0 bg-slate-50 p-6 space-y-6 overflow-hidden">
+                {/* Header for Mobile/Context */}
+                <div className="flex items-center justify-between md:hidden">
+                    <h1 className="text-xl font-bold text-slate-900">Tasks</h1>
                 </div>
-            </div>
 
-            {/* Filter Bar */}
-            <div className="relative">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-2 border-b border-slate-100">
-                    {/* Basic Filters */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-                        {[
-                            { id: 'all', label: 'All' },
-                            { id: 'high', label: 'High Priority' },
-                            { id: 'active', label: 'Active' },
-                            { id: 'completed', label: 'Completed' }
-                        ].map(tab => {
-                            const count = getBasicFilterCount(tab.id);
-                            const isActive = !isAdvancedActive && basicFilter === tab.id;
-
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setBasicFilter(tab.id as any)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center cursor-pointer ${isActive
-                                        ? 'bg-indigo-50 text-indigo-700'
-                                        : 'bg-white text-slate-600 hover:bg-slate-50'
-                                        }`}
+                {/* Quick Add Bar */}
+                <div className="flex flex-col md:flex-row gap-3">
+                    <input
+                        type="text"
+                        placeholder="Add a new task..."
+                        className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
+                        value={quickAddText}
+                        onChange={(e) => setQuickAddText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+                    />
+                    <div className="flex gap-3">
+                        {/* Category Selector (only if not filtered by category) */}
+                        {!selectedCategoryId && taskCategories.length > 0 && (
+                            <div className="relative min-w-[140px]">
+                                <select
+                                    value={quickAddCategoryId}
+                                    onChange={(e) => setQuickAddCategoryId(e.target.value)}
+                                    className="w-full appearance-none px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm"
                                 >
-                                    {tab.label}
-                                    <span className="ml-1.5 opacity-70">({count})</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                                    <option value="">No Category</option>
+                                    {taskCategories.map((c: TaskCategory) => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
+                        )}
 
-                    {/* Time Filter + Advanced */}
-                    <div className="flex items-center gap-3 self-start sm:self-auto">
-                        <div className="flex items-center bg-slate-100 p-1 rounded-lg">
-                            {[
-                                { id: 'all', label: 'Any' },
-                                { id: 'today', label: 'Today' },
-                                { id: 'week', label: 'Week' },
-                                { id: 'month', label: 'Month' },
-                            ].map(tab => {
-                                const isActive = !isAdvancedActive && timeFilter === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setTimeFilter(tab.id as any)}
-                                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${isActive
-                                            ? 'bg-white text-slate-800 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                            }`}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                )
-                            })}
+                        <div className="relative min-w-[120px]">
+                            <select
+                                value={quickAddPriority}
+                                onChange={(e) => setQuickAddPriority(e.target.value as TaskPriority)}
+                                className="w-full appearance-none px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>
-
                         <button
-                            onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                            className={`flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer ${isAdvancedOpen || isAdvancedActive
-                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                }`}
+                            onClick={handleQuickAdd}
+                            className="px-6 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center whitespace-nowrap cursor-pointer shadow-sm"
                         >
-                            <SlidersHorizontal size={14} className="mr-1.5" />
-                            Filters
-                            {isAdvancedActive && <div className="ml-2 w-2 h-2 rounded-full bg-indigo-500"></div>}
+                            <Plus className="w-4 h-4 mr-2" /> Add
                         </button>
                     </div>
                 </div>
 
-                {/* Advanced Filter Drawer */}
-                {isAdvancedOpen && (
-                    <div className="mt-3 p-5 bg-white border border-slate-200 rounded-xl shadow-sm animate-fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {/* Priorities */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority</label>
-                                <div className="space-y-1">
-                                    {(['high', 'medium', 'low'] as TaskPriority[]).map(p => (
-                                        <label key={p} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedFilters.priorities.includes(p)}
-                                                onChange={() => handleAdvancedChange('priorities', p)}
-                                                className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
-                                            />
-                                            <span className="capitalize">{p}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                {/* Filter Bar */}
+                <div className="relative">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-2 border-b border-slate-100">
+                        {/* Basic Filters */}
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'high', label: 'High Priority' },
+                                { id: 'active', label: 'Active' },
+                                { id: 'completed', label: 'Completed' }
+                            ].map(tab => {
+                                const count = getBasicFilterCount(tab.id);
+                                const isActive = !isAdvancedActive && basicFilter === tab.id;
 
-                            {/* Status */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</label>
-                                <div className="space-y-1">
-                                    {(['todo', 'in-progress', 'done'] as TaskStatus[]).map(s => (
-                                        <label key={s} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedFilters.statuses.includes(s)}
-                                                onChange={() => handleAdvancedChange('statuses', s)}
-                                                className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
-                                            />
-                                            <span className="capitalize">{s === 'in-progress' ? 'In Progress' : s}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Categories */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
-                                <div className="space-y-1 max-h-32 overflow-y-auto">
-                                    {categories.map(c => (
-                                        <label key={c} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedFilters.categories.includes(c)}
-                                                onChange={() => handleAdvancedChange('categories', c)}
-                                                className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
-                                            />
-                                            <span>{c}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Date Range */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Range</label>
-                                <div className="space-y-2">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] text-slate-400 mb-1">From</span>
-                                        <input
-                                            type="date"
-                                            className="text-xs border border-slate-200 rounded px-2 py-1.5 focus:border-indigo-500 outline-none"
-                                            value={advancedFilters.dateStart}
-                                            onChange={(e) => handleAdvancedChange('dateStart', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] text-slate-400 mb-1">To</span>
-                                        <input
-                                            type="date"
-                                            className="text-xs border border-slate-200 rounded px-2 py-1.5 focus:border-indigo-500 outline-none"
-                                            value={advancedFilters.dateEnd}
-                                            onChange={(e) => handleAdvancedChange('dateEnd', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end pt-4 border-t border-slate-100 gap-3">
-                            <button
-                                onClick={clearAdvancedFilters}
-                                className="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
-                            >
-                                Reset All
-                            </button>
-                            <button
-                                onClick={() => setIsAdvancedOpen(false)}
-                                className="px-6 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                            >
-                                Apply Filters
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Active Filters Chips */}
-                {isAdvancedActive && !isAdvancedOpen && (
-                    <div className="mt-3 flex flex-wrap gap-2 items-center animate-fade-in">
-                        <span className="text-xs font-semibold text-slate-500 mr-1">Active:</span>
-                        {advancedFilters.priorities.map(p => (
-                            <span key={p} className="inline-flex items-center px-2 py-1 rounded bg-rose-50 text-rose-700 text-[10px] font-medium border border-rose-100 capitalize">
-                                {p} Priority <button onClick={() => handleAdvancedChange('priorities', p)} className="ml-1 hover:text-rose-900"><X size={10} /></button>
-                            </span>
-                        ))}
-                        {advancedFilters.statuses.map(s => (
-                            <span key={s} className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-medium border border-blue-100 capitalize">
-                                {s} <button onClick={() => handleAdvancedChange('statuses', s)} className="ml-1 hover:text-blue-900"><X size={10} /></button>
-                            </span>
-                        ))}
-                        {advancedFilters.categories.map(c => (
-                            <span key={c} className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200">
-                                {c} <button onClick={() => handleAdvancedChange('categories', c)} className="ml-1 hover:text-slate-900"><X size={10} /></button>
-                            </span>
-                        ))}
-                        {(advancedFilters.dateStart || advancedFilters.dateEnd) && (
-                            <span className="inline-flex items-center px-2 py-1 rounded bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-100">
-                                Date Range <button onClick={() => { handleAdvancedChange('dateStart', ''); handleAdvancedChange('dateEnd', ''); }} className="ml-1 hover:text-amber-900"><X size={10} /></button>
-                            </span>
-                        )}
-                        <button onClick={clearAdvancedFilters} className="text-[10px] text-slate-400 hover:text-rose-500 underline ml-2">Clear all</button>
-                    </div>
-                )}
-            </div>
-
-            {/* Task List */}
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3 pt-2">
-                {filteredTasks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-center">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                            <Filter className="w-6 h-6 text-slate-400" />
-                        </div>
-                        <h3 className="text-slate-900 font-medium mb-1">No tasks found</h3>
-                        <p className="text-slate-500 text-sm max-w-xs mx-auto">Try adjusting your filters or search criteria to find what you're looking for.</p>
-                        <button onClick={clearAdvancedFilters} className="mt-4 text-indigo-600 text-sm font-medium hover:underline">Clear filters</button>
-                    </div>
-                ) : (
-                    filteredTasks.map((task) => {
-                        const isExpanded = expandedTaskId === task.id;
-                        const isEditing = editingTaskId === task.id;
-                        const progress = task.subtasks.length > 0
-                            ? Math.round((task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100)
-                            : 0;
-
-                        return (
-                            <div
-                                key={task.id}
-                                className={`bg-white rounded-xl border border-slate-100 p-4 transition-all duration-200 hover:shadow-md ${isExpanded || isEditing ? 'shadow-md ring-1 ring-slate-200' : ''}`}
-                            >
-                                <div className="flex items-start gap-4">
-                                    {/* Checkbox */}
+                                return (
                                     <button
-                                        onClick={() => updateTaskStatus(task.id, !task.completed)}
-                                        className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer ${task.completed
-                                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                                            : 'bg-white border-slate-300 hover:border-indigo-400'
+                                        key={tab.id}
+                                        onClick={() => setBasicFilter(tab.id as any)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center cursor-pointer ${isActive
+                                            ? 'bg-indigo-50 text-indigo-700'
+                                            : 'bg-white text-slate-600 hover:bg-slate-50'
                                             }`}
                                     >
-                                        {task.completed && <CheckCircle2 size={14} className="pointer-events-none" />}
+                                        {tab.label}
+                                        <span className="ml-1.5 opacity-70">({count})</span>
                                     </button>
+                                );
+                            })}
+                        </div>
 
-                                    {/* Task Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start">
-                                            {isEditing ? (
-                                                <div className="flex-1 mr-4 space-y-3">
-                                                    <input
-                                                        type="text"
-                                                        value={editTitle}
-                                                        onChange={(e) => setEditTitle(e.target.value)}
-                                                        className="w-full text-base font-medium text-slate-900 border-b border-indigo-300 focus:border-indigo-600 outline-none pb-1"
-                                                        autoFocus
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        <select
-                                                            value={editPriority}
-                                                            onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
-                                                            className="text-xs border border-slate-200 rounded px-2 py-1"
-                                                        >
-                                                            <option value="high">High</option>
-                                                            <option value="medium">Medium</option>
-                                                            <option value="low">Low</option>
-                                                        </select>
-                                                        <input
-                                                            type="date"
-                                                            value={editDate}
-                                                            onChange={(e) => setEditDate(e.target.value)}
-                                                            className="text-xs border border-slate-200 rounded px-2 py-1"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-2 cursor-pointer" onClick={() => handleExpand(task.id, 'view')}>
-                                                    <h3 className={`text-base font-medium ${task.completed ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
-                                                        {task.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-3">
-                                                        {getPriorityPill(task.priority)}
-                                                        <span className="text-xs text-slate-500 font-medium">
-                                                            {task.subtasks.length > 0 ? `${progress}% complete` : ''}
-                                                        </span>
-                                                        <span className="text-xs text-slate-400">
-                                                            {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' })}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            )}
+                        {/* Time Filter + Advanced */}
+                        <div className="flex items-center gap-3 self-start sm:self-auto">
+                            <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+                                {[
+                                    { id: 'all', label: 'Any' },
+                                    { id: 'today', label: 'Today' },
+                                    { id: 'week', label: 'Week' },
+                                    { id: 'month', label: 'Month' },
+                                ].map(tab => {
+                                    const isActive = !isAdvancedActive && timeFilter === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setTimeFilter(tab.id as any)}
+                                            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${isActive
+                                                ? 'bg-white text-slate-800 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-700'
+                                                }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
 
-                                            {/* Action Icons */}
-                                            <div className="flex items-center gap-1">
-                                                {isEditing ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => saveEditing(task.id)}
-                                                            className="p-2 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
-                                                        >
-                                                            <Check size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={cancelEditing}
-                                                            className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors cursor-pointer"
-                                                        >
-                                                            <X size={18} />
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'view'); }}
-                                                            className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'view' && isExpanded
-                                                                ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
-                                                                : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
-                                                                }`}
-                                                            title="View Details"
-                                                        >
-                                                            <Eye size={18} />
-                                                        </button>
+                            <button
+                                onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+                                className={`flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer ${isAdvancedOpen || isAdvancedActive
+                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    }`}
+                            >
+                                <SlidersHorizontal size={14} className="mr-1.5" />
+                                Filters
+                                {isAdvancedActive && <div className="ml-2 w-2 h-2 rounded-full bg-indigo-500"></div>}
+                            </button>
+                        </div>
+                    </div>
 
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'checklist'); }}
-                                                            className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'checklist' && isExpanded
-                                                                ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
-                                                                : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
-                                                                }`}
-                                                            title="Checklist"
-                                                        >
-                                                            <div className="relative">
-                                                                <ListTodo size={18} />
-                                                                {task.subtasks.length > 0 && !isExpanded && (
-                                                                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'notes'); }}
-                                                            className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'notes' && isExpanded
-                                                                ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
-                                                                : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
-                                                                }`}
-                                                            title="Notes"
-                                                        >
-                                                            <div className="relative">
-                                                                <FileText size={18} />
-                                                                {task.notes && !isExpanded && (
-                                                                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); startEditing(task); }}
-                                                            className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
-                                                            title="Edit Details"
-                                                        >
-                                                            <Edit3 size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(task.id); }}
-                                                            className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
+                    {/* Advanced Filter Drawer */}
+                    {isAdvancedOpen && (
+                        <div className="mt-3 p-5 bg-white border border-slate-200 rounded-xl shadow-sm animate-fade-in">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Priorities */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority</label>
+                                    <div className="space-y-1">
+                                        {(['high', 'medium', 'low'] as TaskPriority[]).map(p => (
+                                            <label key={p} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={advancedFilters.priorities.includes(p)}
+                                                    onChange={() => handleAdvancedChange('priorities', p)}
+                                                    className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
+                                                />
+                                                <span className="capitalize">{p}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Status */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</label>
+                                    <div className="space-y-1">
+                                        {(['todo', 'in-progress', 'done'] as TaskStatus[]).map(s => (
+                                            <label key={s} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={advancedFilters.statuses.includes(s)}
+                                                    onChange={() => handleAdvancedChange('statuses', s)}
+                                                    className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
+                                                />
+                                                <span className="capitalize">{s === 'in-progress' ? 'In Progress' : s}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Categories */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+                                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {categories.map(c => (
+                                            <label key={c} className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={advancedFilters.categories.includes(c)}
+                                                    onChange={() => handleAdvancedChange('categories', c)}
+                                                    className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer"
+                                                />
+                                                <span>{c}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Date Range */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Range</label>
+                                    <div className="space-y-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-slate-400 mb-1">From</span>
+                                            <input
+                                                type="date"
+                                                className="text-xs border border-slate-200 rounded px-2 py-1.5 focus:border-indigo-500 outline-none"
+                                                value={advancedFilters.dateStart}
+                                                onChange={(e) => handleAdvancedChange('dateStart', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-slate-400 mb-1">To</span>
+                                            <input
+                                                type="date"
+                                                className="text-xs border border-slate-200 rounded px-2 py-1.5 focus:border-indigo-500 outline-none"
+                                                value={advancedFilters.dateEnd}
+                                                onChange={(e) => handleAdvancedChange('dateEnd', e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Expanded Area */}
-                                {isExpanded && (
-                                    <TaskDetailPanel
-                                        task={task}
-                                        tab={expandedTab}
-                                        onUpdateTaskNotes={(notes) => updateTaskNotes(task.id, notes)}
-                                        onToggleSubtask={(subId) => toggleSubtask(task, subId)}
-                                        onAddSubtask={(title) => addSubtask(task, title)}
-                                        onDeleteSubtask={(subId) => {
-                                            const newSubtasks = task.subtasks.filter(s => s.id !== subId);
-                                            updateMutation.mutate({ id: task.id, task: { subtasks: newSubtasks } });
-                                        }}
-                                        onClose={() => { setExpandedTaskId(null); setExpandedTab(null); }}
-                                    />
-                                )}
                             </div>
-                        );
-                    })
-                )}
+
+                            <div className="mt-6 flex justify-end pt-4 border-t border-slate-100 gap-3">
+                                <button
+                                    onClick={clearAdvancedFilters}
+                                    className="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                                >
+                                    Reset All
+                                </button>
+                                <button
+                                    onClick={() => setIsAdvancedOpen(false)}
+                                    className="px-6 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                >
+                                    Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Active Filters Chips */}
+                    {isAdvancedActive && !isAdvancedOpen && (
+                        <div className="mt-3 flex flex-wrap gap-2 items-center animate-fade-in">
+                            <span className="text-xs font-semibold text-slate-500 mr-1">Active:</span>
+                            {advancedFilters.priorities.map(p => (
+                                <span key={p} className="inline-flex items-center px-2 py-1 rounded bg-rose-50 text-rose-700 text-[10px] font-medium border border-rose-100 capitalize">
+                                    {p} Priority <button onClick={() => handleAdvancedChange('priorities', p)} className="ml-1 hover:text-rose-900"><X size={10} /></button>
+                                </span>
+                            ))}
+                            {advancedFilters.statuses.map(s => (
+                                <span key={s} className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-medium border border-blue-100 capitalize">
+                                    {s} <button onClick={() => handleAdvancedChange('statuses', s)} className="ml-1 hover:text-blue-900"><X size={10} /></button>
+                                </span>
+                            ))}
+                            {advancedFilters.categories.map(c => (
+                                <span key={c} className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200">
+                                    {c} <button onClick={() => handleAdvancedChange('categories', c)} className="ml-1 hover:text-slate-900"><X size={10} /></button>
+                                </span>
+                            ))}
+                            {(advancedFilters.dateStart || advancedFilters.dateEnd) && (
+                                <span className="inline-flex items-center px-2 py-1 rounded bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-100">
+                                    Date Range <button onClick={() => { handleAdvancedChange('dateStart', ''); handleAdvancedChange('dateEnd', ''); }} className="ml-1 hover:text-amber-900"><X size={10} /></button>
+                                </span>
+                            )}
+                            <button onClick={clearAdvancedFilters} className="text-[10px] text-slate-400 hover:text-rose-500 underline ml-2">Clear all</button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Task List */}
+                <div className="flex-1 overflow-y-auto pr-2 space-y-3 pt-2">
+                    {filteredTasks.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                <Filter className="w-6 h-6 text-slate-400" />
+                            </div>
+                            <h3 className="text-slate-900 font-medium mb-1">No tasks found</h3>
+                            <p className="text-slate-500 text-sm max-w-xs mx-auto">Try adjusting your filters or search criteria to find what you're looking for.</p>
+                            <button onClick={clearAdvancedFilters} className="mt-4 text-indigo-600 text-sm font-medium hover:underline">Clear filters</button>
+                        </div>
+                    ) : (
+                        filteredTasks.map((task) => {
+                            const isExpanded = expandedTaskId === task.id;
+                            const isEditing = editingTaskId === task.id;
+                            const progress = task.subtasks.length > 0
+                                ? Math.round((task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100)
+                                : 0;
+
+                            return (
+                                <div
+                                    key={task.id}
+                                    className={`bg-white rounded-xl border border-slate-100 p-4 transition-all duration-200 hover:shadow-md ${isExpanded || isEditing ? 'shadow-md ring-1 ring-slate-200' : ''}`}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        {/* Checkbox */}
+                                        <button
+                                            onClick={() => updateTaskStatus(task.id, !task.completed)}
+                                            className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer ${task.completed
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white border-slate-300 hover:border-indigo-400'
+                                                }`}
+                                        >
+                                            {task.completed && <CheckCircle2 size={14} className="pointer-events-none" />}
+                                        </button>
+
+                                        {/* Task Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start">
+                                                {isEditing ? (
+                                                    <div className="flex-1 mr-4 space-y-3">
+                                                        <input
+                                                            type="text"
+                                                            value={editTitle}
+                                                            onChange={(e) => setEditTitle(e.target.value)}
+                                                            className="w-full text-base font-medium text-slate-900 border-b border-indigo-300 focus:border-indigo-600 outline-none pb-1"
+                                                            autoFocus
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <select
+                                                                value={editPriority}
+                                                                onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
+                                                                className="text-xs border border-slate-200 rounded px-2 py-1"
+                                                            >
+                                                                <option value="high">High</option>
+                                                                <option value="medium">Medium</option>
+                                                                <option value="low">Low</option>
+                                                            </select>
+
+                                                            {taskCategories.length > 0 && (
+                                                                <select
+                                                                    value={editCategoryId}
+                                                                    onChange={(e) => setEditCategoryId(e.target.value)}
+                                                                    className="text-xs border border-slate-200 rounded px-2 py-1 max-w-[120px]"
+                                                                >
+                                                                    <option value="">No Category</option>
+                                                                    {taskCategories.map((c: TaskCategory) => (
+                                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            )}
+
+                                                            <input
+                                                                type="date"
+                                                                value={editDate}
+                                                                onChange={(e) => setEditDate(e.target.value)}
+                                                                className="text-xs border border-slate-200 rounded px-2 py-1"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2 cursor-pointer" onClick={() => handleExpand(task.id, 'view')}>
+                                                        <h3 className={`text-base font-medium ${task.completed ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                                                            {task.title}
+                                                        </h3>
+                                                        <div className="flex items-center gap-3">
+                                                            {getPriorityPill(task.priority)}
+
+                                                            {/* Category Label */}
+                                                            {(() => {
+                                                                const category = taskCategories.find((c: TaskCategory) => c.id === task.categoryId);
+                                                                if (!category) return null;
+                                                                return (
+                                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
+                                                                        <div
+                                                                            className="w-1.5 h-1.5 rounded-full"
+                                                                            style={{ backgroundColor: category.color || '#CBD5E1' }}
+                                                                        />
+                                                                        <span className="text-[10px] font-medium text-slate-600">
+                                                                            {category.name}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+
+                                                            <span className="text-xs text-slate-500 font-medium">
+                                                                {task.subtasks.length > 0 ? `${progress}% complete` : ''}
+                                                            </span>
+                                                            <span className="text-xs text-slate-400">
+                                                                {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Action Icons */}
+                                                <div className="flex items-center gap-1">
+                                                    {isEditing ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => saveEditing(task.id)}
+                                                                className="p-2 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                                            >
+                                                                <Check size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelEditing}
+                                                                className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors cursor-pointer"
+                                                            >
+                                                                <X size={18} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'view'); }}
+                                                                className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'view' && isExpanded
+                                                                    ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
+                                                                    : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
+                                                                    }`}
+                                                                title="View Details"
+                                                            >
+                                                                <Eye size={18} />
+                                                            </button>
+
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'checklist'); }}
+                                                                className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'checklist' && isExpanded
+                                                                    ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
+                                                                    : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
+                                                                    }`}
+                                                                title="Checklist"
+                                                            >
+                                                                <div className="relative">
+                                                                    <ListTodo size={18} />
+                                                                    {task.subtasks.length > 0 && !isExpanded && (
+                                                                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleExpand(task.id, 'notes'); }}
+                                                                className={`p-2 rounded-lg transition-colors cursor-pointer ${expandedTab === 'notes' && isExpanded
+                                                                    ? 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100'
+                                                                    : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'
+                                                                    }`}
+                                                                title="Notes"
+                                                            >
+                                                                <div className="relative">
+                                                                    <FileText size={18} />
+                                                                    {task.notes && !isExpanded && (
+                                                                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); startEditing(task); }}
+                                                                className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                                                                title="Edit Details"
+                                                            >
+                                                                <Edit3 size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(task.id); }}
+                                                                className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Expanded Area */}
+                                    {isExpanded && (
+                                        <TaskDetailPanel
+                                            task={task}
+                                            tab={expandedTab}
+                                            onUpdateTaskNotes={(notes) => updateTaskNotes(task.id, notes)}
+                                            onToggleSubtask={(subId) => toggleSubtask(task, subId)}
+                                            onAddSubtask={(title) => addSubtask(task, title)}
+                                            onDeleteSubtask={(subId) => {
+                                                const newSubtasks = task.subtasks.filter(s => s.id !== subId);
+                                                updateMutation.mutate({ id: task.id, task: { subtasks: newSubtasks } });
+                                            }}
+                                            onClose={() => { setExpandedTaskId(null); setExpandedTab(null); }}
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
         </div>
     );

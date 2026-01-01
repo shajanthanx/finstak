@@ -1,4 +1,4 @@
-import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat, Task } from "@/types";
+import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat, Task, TaskCategory } from "@/types";
 
 export const api = {
     getTransactions: async (): Promise<Transaction[]> => {
@@ -145,6 +145,47 @@ export const api = {
         if (!res.ok) {
             const error = await res.json().catch(() => ({}));
             throw new Error(error.error || 'Failed to delete task');
+        }
+    },
+
+    getTaskCategories: async (): Promise<TaskCategory[]> => {
+        const res = await fetch('/api/task-categories');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch task categories');
+        }
+        return res.json();
+    },
+
+    createTaskCategory: async (category: Omit<TaskCategory, 'id'>): Promise<TaskCategory> => {
+        const res = await fetch('/api/task-categories', {
+            method: 'POST',
+            body: JSON.stringify(category),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to create task category');
+        }
+        return res.json();
+    },
+
+    updateTaskCategory: async (id: string, category: Partial<TaskCategory>): Promise<TaskCategory> => {
+        const res = await fetch(`/api/task-categories/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(category),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to update task category');
+        }
+        return res.json();
+    },
+
+    deleteTaskCategory: async (id: string): Promise<void> => {
+        const res = await fetch(`/api/task-categories/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to delete task category');
         }
     },
 
