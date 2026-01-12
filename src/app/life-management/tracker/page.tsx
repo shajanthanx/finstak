@@ -109,38 +109,39 @@ export default function HabitTrackerPage() {
     return (
         <div className="h-full flex flex-col space-y-4">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Habit Tracker</h1>
-                    <p className="text-slate-500 text-sm">Build consistency with daily tracking.</p>
+            <div className="flex flex-col md:flex-row justify-between items-end gap-6 pb-6 border-b border-slate-100">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Habit Tracker</h1>
+                    <p className="text-slate-500 text-sm font-medium">Build consistency and track your daily progress.</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    {/* Date Filters */}
-                    <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm flex items-center">
-                        <button
-                            onClick={() => setRange('week')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${range === 'week' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            This Week
-                        </button>
-                        <button
-                            onClick={() => setRange('month')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${range === 'month' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            This Month
-                        </button>
-                        <button
-                            onClick={() => setRange('year')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${range === 'year' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            This Year
-                        </button>
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Date Filters - Segmented Control */}
+                    <div className="bg-slate-100 p-1 rounded-lg flex items-center">
+                        {(['month', 'year'] as DateRange[]).map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => setRange(r)}
+                                className={`
+                                    px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 capitalize
+                                    ${range === r
+                                        ? 'bg-white text-slate-900 shadow-[0_2px_4px_rgba(0,0,0,0.04)] ring-1 ring-black/5'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}
+                                `}
+                            >
+                                This {r}
+                            </button>
+                        ))}
                     </div>
 
-                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+                    <div className="h-8 w-px bg-slate-200 mx-1" />
+
+                    <Button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200 transition-all duration-200"
+                    >
                         <Plus className="w-4 h-4" />
-                        New Habit
+                        <span className="font-semibold">New Habit</span>
                     </Button>
                 </div>
             </div>

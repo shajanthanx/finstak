@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
-import { Trophy, Target, Calendar, Activity } from 'lucide-react';
+import { Trophy, Target, Calendar, Activity, CheckCircle } from 'lucide-react';
 import { HabitStatsResponse } from '@/types';
 
 interface HabitKPIsProps {
@@ -54,26 +54,29 @@ export function HabitKPIs({ data, loading }: HabitKPIsProps) {
 
     const stats = [
         {
-            label: "Completion Rate",
+            label: "Monthly Completion",
             value: `${avgCompletion}%`,
             icon: Activity,
-            color: "text-blue-600",
-            bg: "bg-blue-50"
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
+            border: "border-slate-200"
         },
         {
             label: "Total Completions",
             value: totalCompletions.toString(),
-            icon: Target,
-            color: "text-purple-600",
-            bg: "bg-purple-50"
+            icon: CheckCircle,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            border: "border-slate-200"
         },
         {
             label: "Best Day",
             value: bestDay.date ? new Date(bestDay.date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }) : '-',
             sub: bestDay.percentage > 0 ? `${bestDay.percentage}%` : '',
             icon: Calendar,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50"
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            border: "border-slate-200"
         },
         {
             label: "Top Habit",
@@ -81,27 +84,39 @@ export function HabitKPIs({ data, loading }: HabitKPIsProps) {
             sub: bestHabit ? `${maxLogs} days` : '',
             icon: Trophy,
             color: "text-amber-600",
-            bg: "bg-amber-50"
+            bg: "bg-amber-50",
+            border: "border-slate-200"
         }
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
-                <Card key={index} className="p-4 border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
+                <div key={index} className={`relative overflow-hidden bg-white p-5 rounded-2xl border ${stat.border} shadow-sm group hover:shadow-md transition-all duration-300`}>
+                    <div className="flex items-start justify-between relative z-10">
                         <div>
-                            <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                            <div className="mt-2 flex items-baseline gap-2">
-                                <span className="text-2xl font-bold text-slate-900">{stat.value}</span>
-                                {stat.sub && <span className="text-xs font-medium text-emerald-600">{stat.sub}</span>}
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{stat.label}</p>
+                            <div className="mt-3 flex flex-col gap-1">
+                                <span
+                                    className={`font-bold text-slate-900 tracking-tight ${stat.label === "Top Habit" ? "text-base line-clamp-2 leading-snug" : "text-3xl"}`}
+                                    title={stat.label === "Top Habit" ? stat.value : undefined}
+                                >
+                                    {stat.value}
+                                </span>
+                                {stat.sub && (
+                                    <div className="flex">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                                            {stat.sub}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className={`p-2 rounded-lg ${stat.bg}`}>
-                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                            <stat.icon className="w-5 h-5" />
                         </div>
                     </div>
-                </Card>
+                </div>
             ))}
         </div>
     );

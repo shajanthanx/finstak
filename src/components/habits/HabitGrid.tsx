@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { Habit, HabitLog, DailyHabitStat } from '@/types';
 import { HabitChart } from './HabitChart';
+import { getIcon } from "@/lib/icon-map";
 import { Check, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Assuming cn exists, standard in shadcn projects
 
@@ -54,24 +55,23 @@ export function HabitGrid({ habits, logs, dailyStats, startDate, endDate, onTogg
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
-            {/* Main Flex Container */}
+        <div className="flex flex-col h-full w-full bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-200 overflow-hidden relative">
             {/* Main Content Area */}
             <div className="overflow-auto relative w-full h-full" ref={scrollContainerRef}>
                 <div className="flex flex-col min-w-max">
-                    <div className="flex">
+                    <div className="flex bg-slate-50/50">
                         {/* Corner Piece (Sticky Top Left) */}
-                        <div className="sticky left-0 top-0 z-30 w-64 h-[160px] bg-white border-r border-b border-slate-200 flex flex-col flex-shrink-0">
+                        <div className="sticky left-0 top-0 z-30 w-72 h-[160px] bg-white border-r border-b border-slate-200 flex flex-col flex-shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
                             {/* Top: Aligned with Chart */}
-                            <div className="h-[110px] flex items-center justify-center p-4 bg-slate-50/50">
+                            <div className="h-[110px] flex items-center justify-center p-6 bg-slate-50/30">
                                 <div className="text-center">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Daily Progress</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">Last {dates.length} Days</p>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Daily Progress</p>
+                                    <p className="text-[10px] text-slate-400 mt-1 font-medium">Last {dates.length} Days</p>
                                 </div>
                             </div>
                             {/* Bottom: Aligned with Dates */}
-                            <div className="h-[50px] flex items-center px-4 border-t border-slate-100 bg-slate-50">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Habit Name</span>
+                            <div className="h-[50px] flex items-center px-6 border-t border-slate-100 bg-white">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Habit Name</span>
                             </div>
                         </div>
 
@@ -82,13 +82,9 @@ export function HabitGrid({ habits, logs, dailyStats, startDate, endDate, onTogg
                                 <HabitChart data={dailyStats} width={gridWidth} height={110} />
                             </div>
                             {/* Dates Row */}
-                            <div className="h-[50px] flex items-center border-t border-slate-100 bg-slate-50/50">
+                            <div className="h-[50px] flex items-center border-t border-slate-100 bg-slate-50/30">
                                 {dates.map((date, i) => {
                                     const d = new Date(date);
-                                    // Hack: adding time to force local parsing if needed, but we already handled strict dates strings
-                                    // Actually d is UTC if date is YYYY-MM-DD. 
-                                    // We want "Nov 12" based on the string.
-                                    // Best to use UTC methods because input is YYYY-MM-DD
                                     const month = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
                                     const day = d.getUTCDate();
 
@@ -97,14 +93,15 @@ export function HabitGrid({ habits, logs, dailyStats, startDate, endDate, onTogg
 
                                     return (
                                         <div key={date} className={cn(
-                                            "w-[50px] flex-shrink-0 flex items-center justify-center h-full border-r border-slate-100/50 relative overflow-hidden",
-                                            isFirstOfMonth && "border-l-2 border-l-slate-300"
+                                            "w-[50px] flex-shrink-0 flex items-center justify-center h-full border-r border-slate-100/50 relative overflow-hidden group hover:bg-slate-50 transition-colors",
+                                            isFirstOfMonth && "border-l-[1.5px] border-l-slate-300"
                                         )}>
-                                            <div className="transform -rotate-90 whitespace-nowrap text-[10px] font-medium text-slate-500 tracking-wide">
-                                                <span className={isToday ? "text-blue-600 font-bold" : ""}>
+                                            <div className="transform -rotate-90 whitespace-nowrap text-[10px] font-medium text-slate-400 tracking-wide select-none group-hover:text-slate-600 transition-colors">
+                                                <span className={isToday ? "text-indigo-600 font-bold" : ""}>
                                                     {month} {day}
                                                 </span>
                                             </div>
+                                            {isToday && <div className="absolute bottom-0 w-full h-0.5 bg-indigo-600" />}
                                         </div>
                                     );
                                 })}
@@ -113,55 +110,67 @@ export function HabitGrid({ habits, logs, dailyStats, startDate, endDate, onTogg
                     </div>
 
                     {/* Habit Rows */}
-                    {habits.map((habit) => (
-                        <div key={habit.id} className="flex group hover:bg-slate-50 transition-colors">
-                            {/* Sticky Left Habit Name */}
-                            <div className="sticky left-0 z-10 w-64 bg-white group-hover:bg-slate-50 border-r border-slate-200 p-3 flex items-center justify-between flex-shrink-0">
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <span className="text-xl">{habit.icon}</span>
-                                    <div className="min-w-0">
-                                        <p className="font-medium text-slate-900 truncate">{habit.title}</p>
-                                        <p className="text-xs text-slate-400 truncate">{habit.description || `${habit.frequency}`}</p>
+                    <div className="divide-y divide-slate-100">
+                        {habits.map((habit) => (
+                            <div key={habit.id} className="flex group hover:bg-slate-50/50 transition-colors">
+                                {/* Sticky Left Habit Name */}
+                                <div className="sticky left-0 z-10 w-72 bg-white group-hover:bg-slate-50/50 border-r border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+                                    <div className="flex items-center gap-4 overflow-hidden">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-xl shadow-sm border border-indigo-100 flex-shrink-0">
+                                            {getIcon(habit.icon, "w-5 h-5 text-indigo-600")}
+                                        </div>
+                                        <div className="min-w-0" title={habit.title}>
+                                            <p className="font-semibold text-slate-800 text-sm leading-tight line-clamp-2 break-words">{habit.title}</p>
+                                            <p className="text-[11px] text-slate-400 truncate mt-0.5">{habit.description || ''}</p>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Checkbox Cells */}
+                                <div className="flex h-[72px] items-center">
+                                    {dates.map((date) => {
+                                        const isCompleted = (logs[habit.id]?.[date] || 0) >= 1;
+                                        const isToday = date === new Date().toISOString().split('T')[0];
+                                        const key = `${habit.id}-${date}`;
+                                        const isLoading = toggling === key;
+                                        const isFirstOfMonth = new Date(date).getDate() === 1;
+
+                                        // Determine if editable based on activeFromDate
+                                        const activeFrom = habit.activeFromDate || habit.startDate;
+                                        const isEditable = date >= activeFrom;
+
+                                        return (
+                                            <div key={date} className={cn(
+                                                "w-[50px] h-full flex items-center justify-center border-r border-slate-100/50 flex-shrink-0 transition-colors",
+                                                isToday && "bg-blue-50/50",
+                                                isFirstOfMonth && "border-l-[1.5px] border-l-slate-300",
+                                                !isEditable && "bg-slate-50 opacity-50 cursor-not-allowed"
+                                            )}>
+
+                                                <button
+                                                    onClick={() => isEditable && handleToggle(habit.id, date, isCompleted ? 0 : 1)}
+                                                    disabled={!isEditable || isLoading}
+                                                    className={cn(
+                                                        "w-6 h-6 rounded-[6px] flex items-center justify-center transition-all duration-300 ease-out",
+                                                        // Active & Completed
+                                                        isCompleted && isEditable && "bg-indigo-500 text-white shadow-md shadow-indigo-200 scale-100 rotate-0",
+                                                        // Active & Not Completed
+                                                        !isCompleted && isEditable && "bg-slate-100/50 hover:bg-slate-200 text-transparent hover:scale-110 border border-slate-200 hover:border-slate-300",
+                                                        // Disabled / Inactive
+                                                        !isEditable && "bg-slate-200/50 border border-slate-300/50 text-slate-400 cursor-not-allowed",
+                                                        // Loading
+                                                        isLoading && "opacity-50 cursor-wait scale-90"
+                                                    )}
+                                                >
+                                                    <Check className={cn("w-3.5 h-3.5 transition-transform duration-300", isCompleted ? "scale-100" : "scale-0")} strokeWidth={3.5} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-
-                            {/* Checkbox Cells */}
-                            <div className="flex h-16 items-center">
-                                {dates.map((date) => {
-                                    const isCompleted = (logs[habit.id]?.[date] || 0) >= habit.goalTarget;
-                                    const isToday = date === new Date().toISOString().split('T')[0];
-                                    const key = `${habit.id}-${date}`;
-                                    const isLoading = toggling === key;
-                                    const isFirstOfMonth = new Date(date).getDate() === 1;
-
-                                    return (
-                                        <div key={date} className={cn(
-                                            "w-[50px] h-full flex items-center justify-center border-r border-slate-100/50 flex-shrink-0",
-                                            isToday && "bg-blue-50/30",
-                                            isFirstOfMonth && "border-l-2 border-l-slate-300"
-                                        )}>
-                                            <button
-                                                onClick={() => handleToggle(habit.id, date, isCompleted ? 0 : 1)}
-                                                disabled={isLoading}
-                                                className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200",
-                                                    isCompleted
-                                                        ? "bg-blue-500 text-white shadow-sm shadow-blue-200 scale-100"
-                                                        : "bg-slate-100 text-slate-300 hover:bg-slate-200 scale-90",
-                                                    isLoading && "opacity-50 cursor-wait"
-                                                )}
-                                            >
-                                                {isCompleted && <Check className="w-5 h-5" strokeWidth={3} />}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-
-
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

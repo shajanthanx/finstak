@@ -64,9 +64,13 @@ export async function GET(request: Request) {
 
         // Find active habits for this specific date
         const activeHabits = habits.filter(h => {
-            const started = h.start_date <= dateStr;
+            // Use active_from_date if available, otherwise fallback to start_date
+            const activeFrom = h.active_from_date || h.start_date;
+
+            const isStarted = activeFrom <= dateStr;
             const notArchived = !h.archived_at || new Date(h.archived_at).toISOString().split('T')[0] > dateStr;
-            return started && notArchived;
+
+            return isStarted && notArchived;
         });
 
         const totalHabits = activeHabits.length;
@@ -74,7 +78,7 @@ export async function GET(request: Request) {
 
         activeHabits.forEach(h => {
             const logValue = logsMap[h.id]?.[dateStr] || 0;
-            if (logValue >= h.goal_target) {
+            if (logValue >= 1) {
                 completedCount++;
             }
         });

@@ -29,7 +29,6 @@ export function AddHabitModal({ isOpen, onClose, onSave }: AddHabitModalProps) {
                 description,
                 icon,
                 frequency: 'daily',
-                goalTarget: 1,
                 startDate: new Date().toISOString().split('T')[0] // Start today
             });
             // Reset and close
@@ -74,8 +73,8 @@ export function AddHabitModal({ isOpen, onClose, onSave }: AddHabitModalProps) {
                                 type="button"
                                 onClick={() => setIcon(emoji)}
                                 className={`w-10 h-10 flex items-center justify-center rounded-lg text-xl border transition-all ${icon === emoji
-                                        ? 'bg-blue-50 border-blue-500 scale-110'
-                                        : 'bg-white border-slate-200 hover:bg-slate-50'
+                                    ? 'bg-blue-50 border-blue-500 scale-110'
+                                    : 'bg-white border-slate-200 hover:bg-slate-50'
                                     }`}
                             >
                                 {emoji}

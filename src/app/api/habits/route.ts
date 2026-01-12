@@ -45,8 +45,7 @@ export async function POST(request: Request) {
         const newHabit = {
             ...dbData,
             user_id: user.id,
-            // If start_date isn't provided, specific logic might be needed, 
-            // but DB default is CURRENT_DATE which is usually fine.
+            // active_from_date will be taken from defaults (CURRENT_DATE) if not sent
         };
 
         const { data, error } = await supabase

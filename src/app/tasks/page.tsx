@@ -728,7 +728,7 @@ export default function TasksPage() {
                                                                     }`}
                                                                 title="View Details"
                                                             >
-                                                                <Eye size={18} />
+                                                                <Eye className="w-5 h-5" />
                                                             </button>
 
                                                             <button
@@ -740,7 +740,7 @@ export default function TasksPage() {
                                                                 title="Checklist"
                                                             >
                                                                 <div className="relative">
-                                                                    <ListTodo size={18} />
+                                                                    <ListTodo className="w-5 h-5" />
                                                                     {task.subtasks.length > 0 && !isExpanded && (
                                                                         <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
                                                                     )}
@@ -755,7 +755,7 @@ export default function TasksPage() {
                                                                 title="Notes"
                                                             >
                                                                 <div className="relative">
-                                                                    <FileText size={18} />
+                                                                    <FileText className="w-5 h-5" />
                                                                     {task.notes && !isExpanded && (
                                                                         <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-white" />
                                                                     )}
@@ -766,14 +766,14 @@ export default function TasksPage() {
                                                                 className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
                                                                 title="Edit Details"
                                                             >
-                                                                <Edit3 size={18} />
+                                                                <Edit3 className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(task.id); }}
                                                                 className="p-2 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
                                                                 title="Delete"
                                                             >
-                                                                <Trash2 size={18} />
+                                                                <Trash2 className="w-4.5 h-4.5" />
                                                             </button>
                                                         </>
                                                     )}

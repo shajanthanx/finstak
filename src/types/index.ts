@@ -106,9 +106,9 @@ export interface Habit {
     icon: string;
     color: string;
     startDate: string;
+    activeFromDate: string;
     archivedAt?: string;
     frequency: string;
-    goalTarget: number;
 }
 
 export interface HabitLog {

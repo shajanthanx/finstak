@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Settings as SettingsIcon, Layers, Landmark, CreditCard, Shield, Users, Bell, Globe } from "lucide-react";
 import { TaskCategoriesSettings } from "@/components/setup/TaskCategoriesSettings";
 import { FinanceCategoriesSettings } from "@/components/setup/FinanceCategoriesSettings";
+import { HabitSettings } from "@/components/setup/HabitSettings";
 
-type SetupSection = 'task-categories' | 'finance-categories' | 'general' | 'notifications' | 'billing';
+type SetupSection = 'task-categories' | 'finance-categories' | 'habits' | 'general' | 'notifications' | 'billing';
 
 export default function SetupPage() {
     const [activeSection, setActiveSection] = useState<SetupSection>('task-categories');
@@ -17,6 +18,7 @@ export default function SetupPage() {
             items: [
                 { id: 'task-categories', label: 'Task Categories', icon: Layers },
                 { id: 'finance-categories', label: 'Finance Categories', icon: Landmark },
+                { id: 'habits', label: 'Habits', icon: Shield }, // Using Shield for now or any other icon like Heart/Activity
             ]
         }
     ];
@@ -75,6 +77,7 @@ export default function SetupPage() {
                 <div className="max-w-[1200px] mx-auto p-8">
                     {activeSection === 'task-categories' && <TaskCategoriesSettings />}
                     {activeSection === 'finance-categories' && <FinanceCategoriesSettings />}
+                    {activeSection === 'habits' && <HabitSettings />}
 
                     {/* Placeholder for other sections */}
                     {['general', 'notifications', 'billing', 'security', 'members'].includes(activeSection) && !['task-categories', 'finance-categories'].includes(activeSection) && (
