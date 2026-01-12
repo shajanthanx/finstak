@@ -98,3 +98,35 @@ export interface Task {
     subtasks: Subtask[];
     notes: string;
 }
+
+export interface Habit {
+    id: number;
+    title: string;
+    description?: string;
+    icon: string;
+    color: string;
+    startDate: string;
+    archivedAt?: string;
+    frequency: string;
+    goalTarget: number;
+}
+
+export interface HabitLog {
+    id: number;
+    habitId: number;
+    date: string;
+    completedValue: number;
+}
+
+export interface DailyHabitStat {
+    date: string;
+    totalHabits: number;
+    completedHabits: number;
+    percentage: number;
+}
+
+export interface HabitStatsResponse {
+    dailyStats: DailyHabitStat[];
+    logs: Record<number, Record<string, number>>;
+    habits: Habit[];
+}

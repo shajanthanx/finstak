@@ -19,6 +19,7 @@ import {
     PanelLeftOpen,
     LogOut,
     Settings,
+    Activity,
     type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ const navItems: NavItem[] = [
         label: "Life Management",
         children: [
             { href: "/tasks", icon: ListTodo, label: "Tasks" },
+            { href: "/life-management/tracker", icon: Activity, label: "Habit Tracker" },
         ]
     },
     {

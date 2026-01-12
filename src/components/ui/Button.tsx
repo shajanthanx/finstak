@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Loader2 } from "lucide-react"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -10,10 +11,11 @@ export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
     size?: 'default' | 'sm' | 'lg' | 'icon'
+    isLoading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant = "default", size = "default", ...props }, ref) => {
+    ({ className, variant = "default", size = "default", isLoading, children, disabled, ...props }, ref) => {
         const variants = {
             default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90 shadow-sm",
             destructive: "bg-red-500 text-slate-50 hover:bg-red-500/90 shadow-sm",
@@ -39,8 +41,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     className
                 )}
                 ref={ref}
+                disabled={isLoading || disabled}
                 {...props}
-            />
+            >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {children}
+            </button>
         )
     }
 )

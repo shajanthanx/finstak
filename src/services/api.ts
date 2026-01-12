@@ -1,4 +1,4 @@
-import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat, Task, TaskCategory } from "@/types";
+import { Transaction, Budget, Installment, RecurringBill, MonthlyTrend, KPIStat, AnalyticsStat, Task, TaskCategory, Habit, HabitLog, HabitStatsResponse } from "@/types";
 
 export const api = {
     getTransactions: async (): Promise<Transaction[]> => {
@@ -194,6 +194,69 @@ export const api = {
         if (!res.ok) {
             const error = await res.json().catch(() => ({}));
             throw new Error(error.error || 'Failed to check setup status');
+        }
+        return res.json();
+    },
+
+    getHabits: async (): Promise<Habit[]> => {
+        const res = await fetch('/api/habits');
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch habits');
+        }
+        return res.json();
+    },
+
+    createHabit: async (habit: Partial<Habit>): Promise<Habit> => {
+        const res = await fetch('/api/habits', {
+            method: 'POST',
+            body: JSON.stringify(habit),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to create habit');
+        }
+        return res.json();
+    },
+
+    updateHabit: async (id: number, habit: Partial<Habit>): Promise<Habit> => {
+        const res = await fetch(`/api/habits/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(habit),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to update habit');
+        }
+        return res.json();
+    },
+
+    deleteHabit: async (id: number): Promise<void> => {
+        const res = await fetch(`/api/habits/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to delete habit');
+        }
+    },
+
+    logHabit: async (habitId: number, date: string, completedValue: number): Promise<HabitLog> => {
+        const res = await fetch('/api/habits/log', {
+            method: 'POST',
+            body: JSON.stringify({ habitId, date, completedValue }),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to log habit');
+        }
+        return res.json();
+    },
+
+    getHabitStats: async (startDate: string, endDate: string): Promise<HabitStatsResponse> => {
+        const params = new URLSearchParams({ startDate, endDate });
+        const res = await fetch(`/api/habits/stats?${params}`);
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to fetch habit stats');
         }
         return res.json();
     }
