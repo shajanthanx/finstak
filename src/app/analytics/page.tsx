@@ -3,7 +3,9 @@
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
-import { Percent, DollarSign, Calendar } from "lucide-react";
+import { Percent, DollarSign, Calendar, ListChecks } from "lucide-react";
+import { categoryService } from "@/services/categories";
+import { Category } from "@/types";
 import {
     BarChart,
     Bar,
@@ -29,9 +31,10 @@ export default function AnalyticsPage() {
     const { data: trendData } = useQuery({ queryKey: ['monthlyTrends'], queryFn: api.getMonthlyTrends });
     const { data: transactions } = useQuery({ queryKey: ['transactions'], queryFn: api.getTransactions });
     const { data: budgets } = useQuery({ queryKey: ['budgets'], queryFn: api.getBudgets });
+    const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: categoryService.getAll });
 
     const categoryStats = useMemo(() => {
-        if (!transactions || !budgets) return [];
+        if (!transactions || !budgets || !categories) return [];
 
         const spentMap = transactions.reduce((acc, t) => {
             if (t.type === 'expense') {
@@ -40,19 +43,27 @@ export default function AnalyticsPage() {
             return acc;
         }, {} as Record<string, number>);
 
-        return budgets.map(b => {
-            const spent = spentMap[b.category] || 0;
-            const remaining = b.limit - spent;
-            const percent = (spent / b.limit) * 100;
-            return {
-                ...b,
-                spent,
-                remaining,
-                percent,
-                isOverBudget: spent > b.limit
-            };
-        });
-    }, [transactions, budgets]);
+        return categories
+            .filter(c => c.budgetingEnabled)
+            .map(c => {
+                const budget = budgets.find(b => b.category === c.name);
+                const limit = budget?.limit || 0;
+                const spent = spentMap[c.name] || 0;
+                const remaining = limit - spent;
+                const percent = limit > 0 ? (spent / limit) * 100 : 0;
+
+                return {
+                    category: c.name,
+                    limit,
+                    icon: c.icon,
+                    color: budget?.color || c.color,
+                    spent,
+                    remaining,
+                    percent,
+                    isOverBudget: limit > 0 && spent > limit
+                };
+            });
+    }, [transactions, budgets, categories]);
 
     const getIcon = (name: string) => {
         switch (name) {
@@ -174,8 +185,15 @@ export default function AnalyticsPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {categoryStats.map((cat, i) => (
-                                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-slate-900">{cat.category}</td>
+                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-lg group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-slate-200">
+                                                {cat.icon || '📦'}
+                                            </div>
+                                            <span className="font-medium text-slate-900">{cat.category}</span>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-right text-slate-600">${cat.spent.toFixed(2)}</td>
                                     <td className="px-6 py-4 w-1/3">
                                         <div className="flex items-center space-x-3">

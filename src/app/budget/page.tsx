@@ -39,22 +39,25 @@ export default function BudgetPage() {
             return acc;
         }, {} as Record<string, number>);
 
-        // Filter budgets based on budget-enabled categories
-        return budgets
-            .filter(b => {
-                const category = categories.find((c: Category) => c.name === b.category);
-                return category ? category.budgetingEnabled : true; // Default to true if category not found (fallback)
-            })
-            .map(b => {
-                const spent = spentMap[b.category] || 0;
-                const remaining = b.limit - spent;
-                const percent = (spent / b.limit) * 100;
+        // Filter for budget-enabled categories and join with budget data
+        return categories
+            .filter(c => c.budgetingEnabled)
+            .map(c => {
+                const budget = budgets.find(b => b.category === c.name);
+                const limit = budget?.limit || 0;
+                const spent = spentMap[c.name] || 0;
+                const remaining = limit - spent;
+                const percent = limit > 0 ? (spent / limit) * 100 : 0;
+
                 return {
-                    ...b,
+                    category: c.name,
+                    limit,
+                    icon: c.icon,
+                    color: budget?.color || c.color,
                     spent,
                     remaining,
                     percent,
-                    isOverBudget: spent > b.limit
+                    isOverBudget: limit > 0 && spent > limit
                 };
             });
     }, [transactions, budgets, categories]);
@@ -112,7 +115,7 @@ export default function BudgetPage() {
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center space-x-3">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 text-xl border border-slate-100`}>
-                                        {getCategoryIcon(cat.category)}
+                                        {cat.icon || '📦'}
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-slate-900">{cat.category}</h3>

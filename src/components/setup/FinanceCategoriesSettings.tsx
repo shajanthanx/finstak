@@ -21,6 +21,15 @@ const COLORS = [
     { name: "Pink", value: "#db2777" },
 ];
 
+const ICONS = [
+    "🍔", "🚗", "🎬", "⚡", "🛍️", "🏠", "🏥", "📚", "📄", "💼",
+    "💻", "📈", "💰", "🏦", "💳", "💸", "🛒", "📱", "🎁", "🍕",
+    "☕", "👕", "🚕", "🚌", "🚂", "✈️", "💊", "🎓", "🛠️", "⚖️",
+    "🧼", "🧹", "👔", "👗", "🎒", "🚲", "🚀", "⛵", "🪴", "🐶",
+    "🐱", "🍼", "🧸", "⚽", "🎮", "🎨", "🎸", "🎟️", "🏆", "🔑",
+    "🍱", "🍎", "🩺", "💧", "📡", "📺", "🍫", "🔋", "💡", "☂️"
+];
+
 export function FinanceCategoriesSettings() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState("");
@@ -30,10 +39,11 @@ export function FinanceCategoriesSettings() {
     });
 
     const [isAdding, setIsAdding] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [newCategory, setNewCategory] = useState<Partial<Category>>({
         name: "",
         type: "expense",
-        icon: "",
+        icon: "📦",
         color: "#52525b",
         budgetingEnabled: true,
     });
@@ -43,7 +53,7 @@ export function FinanceCategoriesSettings() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             setIsAdding(false);
-            setNewCategory({ name: "", type: "expense", icon: "", color: "#52525b", budgetingEnabled: true });
+            setNewCategory({ name: "", type: "expense", icon: "📦", color: "#52525b", budgetingEnabled: true });
         },
     });
 
@@ -156,16 +166,17 @@ export function FinanceCategoriesSettings() {
                                 </div>
                             </div>
 
-                            <div className="col-span-5 space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500 ml-1">Color</label>
-                                <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1.5 h-10 shadow-sm overflow-x-auto no-scrollbar">
-                                    {COLORS.map(c => (
+                            <div className="col-span-12 space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500 ml-1">Icon Selection</label>
+                                <div className="grid grid-cols-10 gap-1 p-2 bg-white border border-slate-200 rounded-lg max-h-32 overflow-y-auto no-scrollbar shadow-sm">
+                                    {ICONS.map(icon => (
                                         <button
-                                            key={c.value}
-                                            onClick={() => setNewCategory({ ...newCategory, color: c.value })}
-                                            className={`shrink-0 w-6 h-6 rounded-full mx-1 transition-transform ${newCategory.color === c.value ? 'scale-110 ring-2 ring-indigo-400' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
-                                            style={{ backgroundColor: c.value }}
-                                        />
+                                            key={icon}
+                                            onClick={() => setNewCategory({ ...newCategory, icon })}
+                                            className={`w-8 h-8 flex items-center justify-center rounded-md border transition-all ${newCategory.icon === icon ? 'bg-indigo-50 border-indigo-500 text-lg shadow-inner' : 'bg-slate-50 border-transparent hover:border-slate-300 hover:bg-white'}`}
+                                        >
+                                            {icon}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -234,8 +245,8 @@ export function FinanceCategoriesSettings() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${category.type === 'expense'
-                                                    ? 'bg-slate-100 text-slate-600 border-slate-200'
-                                                    : 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                                : 'bg-indigo-50 text-indigo-700 border-indigo-100'
                                                 }`}>
                                                 {category.type === 'expense' ? 'Expense' : 'Income'}
                                             </span>
@@ -252,6 +263,12 @@ export function FinanceCategoriesSettings() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => setEditingCategory(category)}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => {
                                                         if (confirm('Decommission this category node?')) {
@@ -275,6 +292,104 @@ export function FinanceCategoriesSettings() {
                     <span className="text-xs text-slate-500">Showing {filteredCategories.length} records</span>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {editingCategory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-slate-900">Edit Category</h3>
+                            <button onClick={() => setEditingCategory(null)} className="text-slate-400 hover:text-slate-600">
+                                <Plus className="w-6 h-6 rotate-45" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-500 ml-1 uppercase tracking-wider">Category Name</label>
+                                    <input
+                                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm transition-all"
+                                        value={editingCategory.name}
+                                        onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1 uppercase tracking-wider">Type</label>
+                                        <select
+                                            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm appearance-none"
+                                            value={editingCategory.type}
+                                            onChange={(e) => setEditingCategory({ ...editingCategory, type: e.target.value as 'income' | 'expense' })}
+                                        >
+                                            <option value="expense">Expense</option>
+                                            <option value="income">Income</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1 uppercase tracking-wider">Budgeting</label>
+                                        <div className="h-11 flex items-center px-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                            <Switch
+                                                checked={editingCategory.budgetingEnabled}
+                                                onChange={(e) => setEditingCategory({ ...editingCategory, budgetingEnabled: e.target.checked })}
+                                            />
+                                            <span className="ml-3 text-sm font-medium text-slate-600">Enabled</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-500 ml-1 uppercase tracking-wider">Color Theme</label>
+                                    <div className="flex flex-wrap gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                                        {COLORS.map(c => (
+                                            <button
+                                                key={c.value}
+                                                onClick={() => setEditingCategory({ ...editingCategory, color: c.value })}
+                                                className={`w-7 h-7 rounded-full transition-all ${editingCategory.color === c.value ? 'ring-2 ring-indigo-500 ring-offset-2 scale-110' : 'hover:scale-105 opacity-80 hover:opacity-100'}`}
+                                                style={{ backgroundColor: c.value }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-500 ml-1 uppercase tracking-wider">Icon</label>
+                                    <div className="grid grid-cols-8 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-40 overflow-y-auto no-scrollbar">
+                                        {ICONS.map(icon => (
+                                            <button
+                                                key={icon}
+                                                onClick={() => setEditingCategory({ ...editingCategory, icon })}
+                                                className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${editingCategory.icon === icon ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-110' : 'bg-white border-slate-100 text-lg hover:border-slate-300'}`}
+                                            >
+                                                {icon}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setEditingCategory(null)}
+                                    className="flex-1 h-12 bg-slate-100 text-slate-600 font-semibold rounded-xl hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        updateMutation.mutate({ id: editingCategory.id, updates: editingCategory });
+                                        setEditingCategory(null);
+                                    }}
+                                    className="flex-[2] h-12 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

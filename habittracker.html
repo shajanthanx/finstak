@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker Dashboard</title>
+
+    <!-- 1. Load Tailwind CSS directly from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Load React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- 3. Load Babel to parse JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Configure Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // --- Icon Components ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            ChevronLeft: (props) => <IconWrapper {...props}><path d="m15 18-6-6 6-6" /></IconWrapper>,
+            ChevronRight: (props) => <IconWrapper {...props}><path d="m9 18 6-6-6-6" /></IconWrapper>,
+            Plus: (props) => <IconWrapper {...props}><path d="M5 12h14" /><path d="M12 5v14" /></IconWrapper>,
+            Check: (props) => <IconWrapper {...props}><path d="M20 6 9 17l-5-5" /></IconWrapper>,
+            X: (props) => <IconWrapper {...props}><path d="M18 6 6 18" /><path d="m6 6 18 12" /></IconWrapper>,
+            Minus: (props) => <IconWrapper {...props}><path d="M5 12h14" /></IconWrapper>,
+            Calendar: (props) => <IconWrapper {...props}><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></IconWrapper>,
+            BarChart3: (props) => <IconWrapper {...props}><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></IconWrapper>,
+            TrendingUp: (props) => <IconWrapper {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></IconWrapper>,
+            Award: (props) => <IconWrapper {...props}><circle cx="12" cy="8" r="7" /><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" /></IconWrapper>,
+            ArrowUpRight: (props) => <IconWrapper {...props}><path d="M7 7h10v10" /><path d="M7 17 17 7" /></IconWrapper>,
+        };
+
+        const HabitTrackerDashboard = () => {
+            const [currentDate, setCurrentDate] = useState(new Date(2023, 9, 1));
+
+            // Initial Data
+            const [habits, setHabits] = useState([
+                { id: 1, category: 'Health & Fitness', name: 'Morning Jog (5km)', goal: 20, semanticColor: 'emerald', history: { 1: 'done', 2: 'done', 3: 'skip', 4: 'done', 5: 'fail', 6: 'done', 7: 'done', 8: 'done' } },
+                { id: 2, category: 'Health & Fitness', name: 'Drink 2L Water', goal: 31, semanticColor: 'blue', history: { 1: 'done', 2: 'done', 3: 'done', 4: 'done', 5: 'done', 6: 'done', 7: 'done' } },
+                { id: 3, category: 'Health & Fitness', name: 'No Sugar', goal: 25, semanticColor: 'rose', history: { 1: 'fail', 2: 'done', 3: 'done', 4: 'fail', 5: 'done' } },
+                { id: 4, category: 'Productivity', name: 'Read 30 mins', goal: 15, semanticColor: 'violet', history: { 1: 'skip', 2: 'skip', 3: 'done', 4: 'done', 5: 'done', 6: 'done' } },
+                { id: 5, category: 'Productivity', name: 'Deep Work (2h)', goal: 22, semanticColor: 'indigo', history: { 1: 'done', 2: 'done', 3: 'fail', 4: 'done', 5: 'done' } },
+                { id: 6, category: 'Mindfulness', name: 'Meditation', goal: 31, semanticColor: 'amber', history: { 1: 'done', 2: 'done', 3: 'done', 4: 'done', 5: 'done', 6: 'done' } },
+                { id: 7, category: 'Mindfulness', name: 'Journaling', goal: 31, semanticColor: 'teal', history: { 1: 'done', 2: 'skip', 3: 'done', 4: 'done' } }
+            ]);
+
+            const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const daysInMonth = getDaysInMonth(currentDate);
+            const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const monthName = currentDate.toLocaleString('default', { month: 'long' });
+            const year = currentDate.getFullYear();
+
+            const toggleStatus = (habitId, day) => {
+                setHabits(prevHabits => prevHabits.map(habit => {
+                    if (habit.id !== habitId) return habit;
+                    const currentStatus = habit.history[day];
+                    let newStatus;
+                    if (!currentStatus) newStatus = 'done';
+                    else if (currentStatus === 'done') newStatus = 'skip';
+                    else if (currentStatus === 'skip') newStatus = 'fail';
+                    else newStatus = undefined;
+
+                    const newHistory = { ...habit.history };
+                    if (newStatus === undefined) delete newHistory[day];
+                    else newHistory[day] = newStatus;
+                    return { ...habit, history: newHistory };
+                }));
+            };
+
+            const getHabitStats = (habit) => {
+                const completed = Object.values(habit.history).filter(s => s === 'done').length;
+                const percentage = Math.round((completed / daysInMonth) * 100);
+                const goalPercentage = Math.min(100, Math.round((completed / habit.goal) * 100));
+                return { completed, percentage, goalPercentage };
+            };
+
+            const getTotalStats = () => {
+                let totalDone = 0;
+                let totalPossible = habits.length * daysInMonth;
+                habits.forEach(h => {
+                    totalDone += Object.values(h.history).filter(s => s === 'done').length;
+                });
+                return Math.round((totalDone / totalPossible) * 100) || 0;
+            };
+
+            // --- CHART SETTINGS ---
+            const colWidth = 40;
+            const chartHeight = 64; // Adjusted to be clearly within the row
+            const totalWidth = daysInMonth * colWidth;
+
+            const dailyStats = useMemo(() => {
+                return daysArray.map(day => {
+                    let total = habits.length;
+                    let completed = 0;
+                    habits.forEach(habit => {
+                        if (habit.history[day] === 'done') completed++;
+                    });
+                    return {
+                        day,
+                        percentage: total === 0 ? 0 : Math.round((completed / total) * 100)
+                    };
+                });
+            }, [habits, daysArray]);
+
+            const chartPath = useMemo(() => {
+                if (dailyStats.length === 0) return "";
+                const points = dailyStats.map((stat, index) => {
+                    const x = (index * colWidth) + (colWidth / 2);
+                    // Use mostly the full height, with 4px padding top/bottom
+                    const y = chartHeight - ((stat.percentage / 100) * (chartHeight - 8)) - 4;
+                    return `${x},${y}`;
+                });
+                return `M ${points.join(' L ')}`;
+            }, [dailyStats]);
+
+            const areaPath = useMemo(() => {
+                if (dailyStats.length === 0) return "";
+                const firstX = colWidth / 2;
+                const lastX = (dailyStats.length * colWidth) - (colWidth / 2);
+                return `${chartPath} L ${lastX},${chartHeight} L ${firstX},${chartHeight} Z`;
+            }, [chartPath, dailyStats]);
+
+            const StatCard = ({ label, value, icon: Icon, subtext }) => (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
+                            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">{value}</h3>
+                        </div>
+                        <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
+                            <Icon size={20} />
+                        </div>
+                    </div>
+                    {subtext && (
+                        <div className="mt-4 flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-full">
+                            <Icons.ArrowUpRight size={12} className="mr-1" />
+                            {subtext}
+                        </div>
+                    )}
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+                    <div className="max-w-[1600px] mx-auto p-6 lg:p-8">
+
+                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
+                            <div>
+                                <h1 className="text-2xl font-semibold tracking-tight text-slate-900 flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-sm">
+                                        <Icons.Calendar size={20} />
+                                    </div>
+                                    Habit Dashboard
+                                </h1>
+                                <p className="text-sm text-slate-500 mt-2 ml-1">Overview of your daily performance and consistency.</p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                                <div className="flex items-center bg-white rounded-lg shadow-sm border border-slate-200 p-1">
+                                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 hover:bg-slate-50 rounded-md transition-colors text-slate-400 hover:text-slate-700">
+                                        <Icons.ChevronLeft size={16} />
+                                    </button>
+                                    <div className="px-4 text-sm font-medium text-slate-700 w-32 text-center tabular-nums select-none">
+                                        {monthName} {year}
+                                    </div>
+                                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 hover:bg-slate-50 rounded-md transition-colors text-slate-400 hover:text-slate-700">
+                                        <Icons.ChevronRight size={16} />
+                                    </button>
+                                </div>
+
+                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm w-full sm:w-auto focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                                    <Icons.Plus size={16} />
+                                    New Habit
+                                </button>
+                            </div>
+                        </header>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <StatCard label="Monthly Completion" value={`${getTotalStats()}%`} icon={Icons.TrendingUp} subtext="+2.4% vs last month" />
+                            <StatCard label="Total Completed" value={habits.reduce((acc, h) => acc + Object.values(h.history).filter(s => s === 'done').length, 0)} icon={Icons.Check} />
+                            <StatCard label="Current Streak" value="8 Days" icon={Icons.Award} />
+                            <StatCard label="Active Habits" value={habits.length} icon={Icons.BarChart3} />
+                        </div>
+
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="min-w-max border-collapse text-left">
+                                    <thead>
+                                        {/* CHART ROW */}
+                                        <tr className="bg-slate-50/30 border-b border-slate-100 h-24">
+                                            <th className="sticky left-0 z-30 bg-white/95 backdrop-blur-sm p-6 text-xs font-semibold text-slate-400 uppercase tracking-wider border-r border-slate-200 w-[280px]">
+                                                Performance Trend
+                                            </th>
+                                            <th colSpan={daysInMonth} className="relative p-0 align-bottom bg-white/50">
+                                                {/* SVG Container: Fixed Height & Explicit Width */}
+                                                <div style={{ width: `${totalWidth}px`, height: '96px' }} className="relative">
+                                                    <svg
+                                                        width="100%"
+                                                        height="100%"
+                                                        viewBox={`0 0 ${totalWidth} ${chartHeight}`}
+                                                        preserveAspectRatio="none"
+                                                        className="absolute bottom-0 left-0 overflow-visible"
+                                                    >
+                                                        <defs>
+                                                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
+                                                                <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <path d={areaPath} fill="url(#chartGradient)" />
+                                                        <path
+                                                            d={chartPath}
+                                                            fill="none"
+                                                            stroke="#4f46e5"
+                                                            strokeWidth="3"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            vectorEffect="non-scaling-stroke"
+                                                        />
+                                                        {dailyStats.map((stat, i) => {
+                                                            const x = (i * colWidth) + (colWidth / 2);
+                                                            const y = chartHeight - ((stat.percentage / 100) * (chartHeight - 8)) - 4;
+                                                            return (
+                                                                <circle
+                                                                    key={i}
+                                                                    cx={x}
+                                                                    cy={y}
+                                                                    r="4"
+                                                                    fill="white"
+                                                                    stroke="#4f46e5"
+                                                                    strokeWidth="2"
+                                                                    className="opacity-0 hover:opacity-100 transition-opacity duration-200"
+                                                                />
+                                                            );
+                                                        })}
+                                                    </svg>
+                                                </div>
+                                            </th>
+                                            <th className="sticky right-0 z-30 bg-white/95 backdrop-blur-sm border-l border-slate-200 w-[240px]"></th>
+                                        </tr>
+
+                                        <tr className="border-b border-slate-200">
+                                            <th className="sticky left-0 z-20 bg-slate-50 p-4 pl-6 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-slate-200">
+                                                Habit
+                                            </th>
+                                            {daysArray.map(day => {
+                                                const dateObj = new Date(year, currentDate.getMonth(), day);
+                                                const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                                                return (
+                                                    <th key={day} className={`p-2 text-center text-[11px] font-medium border-r border-slate-100 last:border-0 ${isWeekend ? 'bg-slate-50/50 text-slate-400' : 'bg-white text-slate-500'}`} style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}>
+                                                        <div className="flex flex-col items-center gap-0.5">
+                                                            <span className={isWeekend ? 'text-slate-400' : 'text-slate-900 font-semibold'}>{day}</span>
+                                                            <span className="text-[10px] uppercase">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][dateObj.getDay()]}</span>
+                                                        </div>
+                                                    </th>
+                                                );
+                                            })}
+                                            <th className="sticky right-0 z-20 bg-slate-50 p-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider border-l border-slate-200 pl-6">
+                                                Completion
+                                            </th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-slate-100">
+                                        {habits.map((habit) => {
+                                            const { goalPercentage } = getHabitStats(habit);
+                                            return (
+                                                <tr key={habit.id} className="group hover:bg-slate-50/50 transition-colors">
+                                                    <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 transition-colors p-4 pl-6 border-r border-slate-200">
+                                                        <div className="flex flex-col justify-center h-full">
+                                                            <span className="font-medium text-slate-900 text-sm">{habit.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    {daysArray.map(day => {
+                                                        const status = habit.history[day];
+                                                        return (
+                                                            <td key={day} className="p-0 border-r border-slate-100 last:border-0 text-center relative group/cell" style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}>
+                                                                <button onClick={() => toggleStatus(habit.id, day)} className={`w-full h-12 flex items-center justify-center transition-all duration-150 focus:outline-none ${status === 'done' ? 'text-emerald-600' : status === 'fail' ? 'text-rose-500' : status === 'skip' ? 'text-slate-400 bg-slate-50/50' : 'text-transparent hover:text-slate-200'}`}>
+                                                                    {status === 'done' && <div className="w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center"><Icons.Check size={14} /></div>}
+                                                                    {status === 'fail' && <div className="w-6 h-6 bg-rose-50 rounded-md flex items-center justify-center"><Icons.X size={14} /></div>}
+                                                                    {status === 'skip' && <Icons.Minus size={14} />}
+                                                                    {!status && <div className="w-1.5 h-1.5 rounded-full bg-slate-200 opacity-0 group-hover/cell:opacity-100 transition-opacity" />}
+                                                                </button>
+                                                            </td>
+                                                        );
+                                                    })}
+                                                    <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-colors p-4 pl-6 border-l border-slate-200">
+                                                        <div className="flex items-center gap-4 w-full">
+                                                            <div className="flex-1 flex flex-col gap-1.5">
+                                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                                    <div className={`h-full rounded-full transition-all duration-500 ${goalPercentage >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${goalPercentage}%` }}></div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right w-12">
+                                                                <span className="text-sm font-medium text-slate-700 tabular-nums">{goalPercentage}%</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<HabitTrackerDashboard />);
+    </script>
+</body>
+
+</html>
