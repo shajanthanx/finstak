@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 import { categoryService } from "@/services/categories";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Filter, Plus, Trash2, Wallet, Calendar, Tag, Loader2 } from "lucide-react";
+import { Search, Filter, Plus, Trash2, Wallet, Calendar, Tag, Loader2, Edit2, X } from "lucide-react";
+
 import { useState, useMemo } from "react";
 import { Transaction, Category } from "@/types";
 import { SetupBanner } from "@/components/setup/SetupBanner";
@@ -13,6 +14,8 @@ export default function TransactionsPage() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
+    const [editingTxId, setEditingTxId] = useState<number | null>(null);
+
 
     // Fetch dynamic categories
     const { data: categories, isLoading: isCategoriesLoading } = useQuery({
@@ -57,17 +60,31 @@ export default function TransactionsPage() {
         mutationFn: api.createTransaction,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            setNewTx(prev => ({
-                name: '',
-                amount: '' as unknown as number,
-                category: prev.type === 'income'
-                    ? incomeCategories[0]?.name || ''
-                    : expenseCategories[0]?.name || '',
-                type: prev.type,
-                date: new Date().toISOString().split('T')[0]
-            }));
+            resetForm();
         }
     });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, tx }: { id: number, tx: Transaction }) => api.updateTransaction(id, tx),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            resetForm();
+        }
+    });
+
+    const resetForm = () => {
+        setEditingTxId(null);
+        setNewTx(prev => ({
+            name: '',
+            amount: '' as unknown as number,
+            category: prev.type === 'income'
+                ? incomeCategories[0]?.name || ''
+                : expenseCategories[0]?.name || '',
+            type: prev.type,
+            date: new Date().toISOString().split('T')[0]
+        }));
+    };
+
 
     const deleteMutation = useMutation({
         mutationFn: api.deleteTransaction,
@@ -87,14 +104,34 @@ export default function TransactionsPage() {
         if (!newTx.name || !newTx.amount || !newTx.category) return;
 
         const categoryObj = categories?.find(c => c.name === newTx.category);
-
-        createMutation.mutate({
+        const txData = {
             ...newTx,
-            id: Date.now(),
             amount: Number(newTx.amount),
             icon: categoryObj?.icon || '📦'
-        } as Transaction);
+        } as Transaction;
+
+        if (editingTxId) {
+            updateMutation.mutate({ id: editingTxId, tx: txData });
+        } else {
+            createMutation.mutate({
+                ...txData,
+                id: Date.now(),
+            } as Transaction);
+        }
     };
+
+    const handleEdit = (t: Transaction) => {
+        setEditingTxId(t.id);
+        setNewTx({
+            name: t.name,
+            amount: t.amount,
+            category: t.category,
+            type: t.type,
+            date: t.date
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
 
     if (isLoading || isCategoriesLoading) {
         return (
@@ -197,20 +234,38 @@ export default function TransactionsPage() {
                         />
                     </div>
 
-                    {/* 5. Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={createMutation.isPending || (newTx.type === 'income' ? incomeCategories.length === 0 : expenseCategories.length === 0)}
-                        className="px-6 py-2.5 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
-                    >
-                        {createMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <>
-                                <Plus className="w-4 h-4 mr-2" /> Add
-                            </>
+                    {/* 5. Action Buttons */}
+                    <div className="flex gap-2">
+                        <button
+                            type="submit"
+                            disabled={createMutation.isPending || updateMutation.isPending || (newTx.type === 'income' ? incomeCategories.length === 0 : expenseCategories.length === 0)}
+                            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shrink-0 ${editingTxId ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'}`}
+                        >
+                            {createMutation.isPending || updateMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <>
+                                    {editingTxId ? (
+                                        <><Edit2 className="w-4 h-4 mr-2" /> Update</>
+                                    ) : (
+                                        <><Plus className="w-4 h-4 mr-2" /> Add</>
+                                    )}
+                                </>
+                            )}
+                        </button>
+
+                        {editingTxId && (
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="p-2.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-all font-bold"
+                                title="Cancel Edit"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         )}
-                    </button>
+                    </div>
+
                 </form>
             </Card>
 
@@ -292,14 +347,24 @@ export default function TransactionsPage() {
                                             {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-8 py-5 text-right">
-                                            <button
-                                                onClick={() => deleteMutation.mutate(t.id)}
-                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                                title="Remove Transaction"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center justify-end space-x-2">
+                                                <button
+                                                    onClick={() => handleEdit(t)}
+                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                    title="Edit Transaction"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteMutation.mutate(t.id)}
+                                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    title="Remove Transaction"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
+
                                     </tr>
                                 ))
                             ) : (

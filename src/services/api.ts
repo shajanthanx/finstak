@@ -22,6 +22,19 @@ export const api = {
         return res.json();
     },
 
+    updateTransaction: async (id: number, transaction: Partial<Transaction>): Promise<Transaction> => {
+        const res = await fetch(`/api/transactions/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(transaction),
+        });
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to update transaction');
+        }
+        return res.json();
+    },
+
+
     deleteTransaction: async (id: number): Promise<void> => {
         const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
         if (!res.ok) {

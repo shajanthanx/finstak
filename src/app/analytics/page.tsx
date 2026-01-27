@@ -19,12 +19,14 @@ import {
 } from 'recharts';
 import { useMemo } from "react";
 import { KPIStats } from "@/components/dashboard/KPIStats";
-import { CashFlowChart } from "@/components/dashboard/CashFlowChart";
 import { SpendingPieChart } from "@/components/dashboard/SpendingPieChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+
 import { BudgetStatus } from "@/components/dashboard/BudgetStatus";
 import { UpcomingBills } from "@/components/dashboard/UpcomingBills";
 import { SetupBanner } from "@/components/setup/SetupBanner";
+import { DailyExpensesChart } from "@/components/analytics/DailyExpensesChart";
+
 
 export default function AnalyticsPage() {
     const { data: stats } = useQuery({ queryKey: ['analyticsStats'], queryFn: api.getAnalyticsStats });
@@ -44,8 +46,8 @@ export default function AnalyticsPage() {
         }, {} as Record<string, number>);
 
         return categories
-            .filter(c => c.budgetingEnabled)
             .map(c => {
+
                 const budget = budgets.find(b => b.category === c.name);
                 const limit = budget?.limit || 0;
                 const spent = spentMap[c.name] || 0;
@@ -88,6 +90,8 @@ export default function AnalyticsPage() {
             <SetupBanner />
             {/* KPI Stats from Home */}
             <KPIStats />
+            <DailyExpensesChart transactions={transactions} />
+
 
             {/* Analytics Header Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -109,63 +113,7 @@ export default function AnalyticsPage() {
                 ))}
             </div>
 
-            {/* Main Comparison Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="col-span-1 lg:col-span-2 p-6">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="font-semibold text-slate-900">Income vs Expenses</h3>
-                            <p className="text-sm text-slate-500">Monthly breakdown for 2023</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center text-xs space-x-1">
-                                <span className="w-2 h-2 rounded-full bg-slate-900"></span>
-                                <span className="text-slate-600">Income</span>
-                            </div>
-                            <div className="flex items-center text-xs space-x-1">
-                                <span className="w-2 h-2 rounded-full bg-slate-300"></span>
-                                <span className="text-slate-600">Expense</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={trendData} barGap={4} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                                <Tooltip
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ fontSize: '12px', fontWeight: 500 }}
-                                />
-                                <Bar dataKey="income" fill="#18181b" radius={[4, 4, 0, 0]} barSize={20} />
-                                <Bar dataKey="expense" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
 
-                {/* Savings Trend */}
-                <Card className="col-span-1 p-6">
-                    <h3 className="font-semibold text-slate-900 mb-2">Savings Trend</h3>
-                    <p className="text-sm text-slate-500 mb-6">Net savings over last 7 months</p>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ fontSize: '12px', fontWeight: 500 }}
-                                />
-                                <Line type="monotone" dataKey="savings" stroke="#059669" strokeWidth={2} dot={{ fill: '#fff', stroke: '#059669', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: '#059669' }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-            </div>
 
             <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
@@ -223,9 +171,12 @@ export default function AnalyticsPage() {
 
             {/* Dashboard Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <CashFlowChart />
-                <SpendingPieChart />
+                <div className="lg:col-span-3">
+                    <SpendingPieChart />
+                </div>
             </div>
+
+
 
             {/* Dashboard Bottom Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
